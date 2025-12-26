@@ -3,15 +3,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
+from datetime import datetime
+from typing import Optional, List
 import tempfile
 import shutil
 import logging
 import secrets
 from src.config import get_settings
 from src.database import get_db
-from src.schemas import StationUpload, ImportPathRequest
+from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse
 from src.services.ingestion import store_weather_reading
 from src.services.csv_import import import_csv_data
+from src.services.query import get_latest_reading, get_readings, get_database_stats
 
 # Configure logging
 settings = get_settings()
@@ -203,6 +206,33 @@ async def import_csv_from_path(
     except Exception as e:
         logger.error(f"Import failed: {e}")
         raise HTTPException(status_code=500, detail="Import failed. Please check CSV format and try again.")
+
+
+@app.get("/api/weather/latest", response_model=WeatherReadingResponse)
+async def latest_reading(db: Session = Depends(get_db)):
+    """Get most recent weather reading"""
+    reading = get_latest_reading(db)
+    if not reading:
+        raise HTTPException(status_code=404, detail="No readings found")
+    return reading
+
+
+@app.get("/api/weather/readings", response_model=List[WeatherReadingResponse])
+async def query_readings(
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    limit: Optional[int] = 1000,
+    db: Session = Depends(get_db)
+):
+    """Query weather readings with filters"""
+    readings = get_readings(db, start, end, limit)
+    return readings
+
+
+@app.get("/api/weather/stats")
+async def database_stats(db: Session = Depends(get_db)):
+    """Get database statistics"""
+    return get_database_stats(db)
 
 
 @app.get("/", response_class=HTMLResponse)
