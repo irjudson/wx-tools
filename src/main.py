@@ -26,6 +26,9 @@ app = FastAPI(
 
 logger.info("Starting Weather Station Service v1.0.0")
 
+# Constants
+MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -127,16 +130,45 @@ async def import_csv_file(
     db: Session = Depends(get_db)
 ):
     """Import CSV file via upload"""
-    # Save uploaded file to temp location
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
+    # Check file size
+    file.file.seek(0, 2)  # Seek to end
+    file_size = file.file.tell()
+    file.file.seek(0)  # Reset to beginning
 
+    if file_size > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {MAX_UPLOAD_SIZE} bytes")
+
+    # Validate content type
+    allowed_types = ["text/csv", "application/csv", "text/plain"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Expected CSV, got {file.content_type}"
+        )
+
+    # Validate file extension
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must have .csv extension")
+
+    tmp_path = None
     try:
+        # Save uploaded file to temp location
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = Path(tmp.name)
+
         stats = import_csv_data(tmp_path, db)
         return stats
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="CSV file not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid CSV format: {str(e)}")
+    except Exception as e:
+        logger.error(f"Import failed: {e}")
+        raise HTTPException(status_code=500, detail="Import failed. Please check CSV format and try again.")
     finally:
-        tmp_path.unlink()  # Clean up temp file
+        if tmp_path and tmp_path.exists():
+            tmp_path.unlink()
 
 
 @app.post("/api/weather/import/path")
@@ -145,13 +177,32 @@ async def import_csv_from_path(
     db: Session = Depends(get_db)
 ):
     """Import CSV from file path (for Docker volume mounts)"""
-    csv_path = Path(request.path)
+    csv_path = Path(request.path).resolve()  # Resolve to absolute path
+
+    # Validate path is within allowed directories
+    allowed_dirs = [Path("/data").resolve(), Path("tests/fixtures").resolve()]
+    if not any(csv_path.is_relative_to(allowed_dir) for allowed_dir in allowed_dirs):
+        raise HTTPException(status_code=403, detail="Access to this path is forbidden")
+
+    if csv_path.suffix.lower() != '.csv':
+        raise HTTPException(status_code=400, detail="File must have .csv extension")
 
     if not csv_path.exists():
         raise HTTPException(status_code=404, detail="CSV file not found")
 
-    stats = import_csv_data(csv_path, db)
-    return stats
+    if not csv_path.is_file():
+        raise HTTPException(status_code=400, detail="Path is not a file")
+
+    try:
+        stats = import_csv_data(csv_path, db)
+        return stats
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="CSV file not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid CSV format: {str(e)}")
+    except Exception as e:
+        logger.error(f"Import failed: {e}")
+        raise HTTPException(status_code=500, detail="Import failed. Please check CSV format and try again.")
 
 
 @app.get("/", response_class=HTMLResponse)
