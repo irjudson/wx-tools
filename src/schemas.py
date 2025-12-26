@@ -47,3 +47,8 @@ class WeatherReadingResponse(BaseModel):
     solar_radiation_wm2: Optional[float]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ImportPathRequest(BaseModel):
+    """Schema for CSV import from file path"""
+    path: str

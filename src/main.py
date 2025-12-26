@@ -1,13 +1,17 @@
-from fastapi import FastAPI, Depends, HTTPException, Form
+from fastapi import FastAPI, Depends, HTTPException, Form, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from pathlib import Path
+import tempfile
+import shutil
 import logging
 import secrets
 from src.config import get_settings
 from src.database import get_db
-from src.schemas import StationUpload
+from src.schemas import StationUpload, ImportPathRequest
 from src.services.ingestion import store_weather_reading
+from src.services.csv_import import import_csv_data
 
 # Configure logging
 settings = get_settings()
@@ -115,6 +119,39 @@ async def upload_weather_data(
     reading = store_weather_reading(db, upload)
 
     return {"status": "success", "timestamp": reading.timestamp}
+
+
+@app.post("/api/weather/import")
+async def import_csv_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Import CSV file via upload"""
+    # Save uploaded file to temp location
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = Path(tmp.name)
+
+    try:
+        stats = import_csv_data(tmp_path, db)
+        return stats
+    finally:
+        tmp_path.unlink()  # Clean up temp file
+
+
+@app.post("/api/weather/import/path")
+async def import_csv_from_path(
+    request: ImportPathRequest,
+    db: Session = Depends(get_db)
+):
+    """Import CSV from file path (for Docker volume mounts)"""
+    csv_path = Path(request.path)
+
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="CSV file not found")
+
+    stats = import_csv_data(csv_path, db)
+    return stats
 
 
 @app.get("/", response_class=HTMLResponse)
