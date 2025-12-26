@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 import logging
+import secrets
 from src.config import get_settings
 from src.database import get_db
 from src.schemas import StationUpload
@@ -71,8 +72,8 @@ async def upload_weather_data(
     db: Session = Depends(get_db)
 ):
     """Receive weather data from WS-2902 station"""
-    # Validate PASSKEY
-    if PASSKEY != get_settings().station_passkey:
+    # Validate PASSKEY using constant-time comparison to prevent timing attacks
+    if not secrets.compare_digest(PASSKEY, get_settings().station_passkey):
         raise HTTPException(status_code=401, detail="Invalid PASSKEY")
 
     # Create upload object

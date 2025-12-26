@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from src.models import WeatherReading
 from src.schemas import StationUpload
 import logging
@@ -56,16 +57,8 @@ def store_weather_reading(db: Session, upload: StationUpload) -> WeatherReading:
     """Store weather reading in database with duplicate prevention"""
     normalized_data = normalize_station_data(upload)
 
-    # Check if reading already exists
-    existing = db.query(WeatherReading).filter(
-        WeatherReading.timestamp == normalized_data["timestamp"]
-    ).first()
-
-    if existing:
-        logger.info(f"Reading at {normalized_data['timestamp']} already exists, skipping")
-        return existing
-
-    # Create new reading
+    # Create new reading and attempt to insert
+    # Rely on unique constraint to prevent duplicates (handles race conditions)
     reading = WeatherReading(**normalized_data)
     db.add(reading)
 
@@ -73,14 +66,15 @@ def store_weather_reading(db: Session, upload: StationUpload) -> WeatherReading:
         db.commit()
         db.refresh(reading)
         logger.info(f"Stored reading at {normalized_data['timestamp']}")
-    except Exception as e:
+    except IntegrityError:
+        # Duplicate timestamp - fetch and return existing reading
         db.rollback()
-        logger.error(f"Error storing reading: {e}")
-        # Try to fetch existing reading in case of race condition
+        logger.info(f"Reading at {normalized_data['timestamp']} already exists, skipping")
         reading = db.query(WeatherReading).filter(
             WeatherReading.timestamp == normalized_data["timestamp"]
         ).first()
         if not reading:
+            # Should not happen, but raise if we can't find the existing record
             raise
 
     return reading
