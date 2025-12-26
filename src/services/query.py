@@ -16,9 +16,13 @@ def get_readings(
     db: Session,
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    limit: Optional[int] = 1000
+    limit: Optional[int] = 1000,
+    offset: Optional[int] = 0
 ) -> List[WeatherReading]:
-    """Query weather readings with optional filters"""
+    """Query weather readings with optional filters
+
+    Returns readings ordered by timestamp descending (newest first).
+    """
     query = db.query(WeatherReading)
 
     if start:
@@ -26,7 +30,7 @@ def get_readings(
     if end:
         query = query.filter(WeatherReading.timestamp <= end)
 
-    return query.order_by(WeatherReading.timestamp.desc()).limit(limit).all()
+    return query.order_by(WeatherReading.timestamp.desc()).offset(offset).limit(limit).all()
 
 
 def get_database_stats(db: Session) -> dict:

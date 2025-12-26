@@ -39,7 +39,10 @@ class StationUpload(BaseModel):
 
 
 class WeatherReadingResponse(BaseModel):
-    """Schema for weather reading response"""
+    """Weather reading response with key metrics
+
+    This is a summary view. Full data model includes 30+ fields.
+    """
     timestamp: datetime
     outdoor_temp_f: Optional[float]
     humidity_pct: Optional[int]

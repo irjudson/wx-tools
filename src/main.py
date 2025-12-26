@@ -222,10 +222,25 @@ async def query_readings(
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     limit: Optional[int] = 1000,
+    offset: Optional[int] = 0,
     db: Session = Depends(get_db)
 ):
     """Query weather readings with filters"""
-    readings = get_readings(db, start, end, limit)
+    # Enforce maximum limit to prevent DoS
+    if limit is not None and limit > 10000:
+        raise HTTPException(status_code=400, detail="Limit cannot exceed 10000")
+    if limit is not None and limit < 1:
+        raise HTTPException(status_code=400, detail="Limit must be at least 1")
+
+    # Validate offset
+    if offset is not None and offset < 0:
+        raise HTTPException(status_code=400, detail="Offset must be non-negative")
+
+    # Validate date range
+    if start and end and start > end:
+        raise HTTPException(status_code=400, detail="Start date must be before end date")
+
+    readings = get_readings(db, start, end, limit, offset)
     return readings
 
 
