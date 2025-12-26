@@ -2,7 +2,7 @@ import csv
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 from src.models import WeatherReading
@@ -48,46 +48,63 @@ CSV_FIELD_MAPPING = {
 
 def parse_csv_file(csv_path: Path) -> List[Dict]:
     """Parse CSV file and return list of normalized readings"""
+    # C1: Add file path validation
+    if not csv_path.exists():
+        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+    if not csv_path.is_file():
+        raise ValueError(f"Path is not a file: {csv_path}")
+
     readings = []
 
-    with open(csv_path, 'r') as f:
-        reader = csv.DictReader(f)
+    # C2 & I4: Add file I/O exception handling with UTF-8 encoding
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
 
-        for row in reader:
-            normalized = {}
+            for row in reader:
+                normalized = {}
 
-            for csv_col, db_field in CSV_FIELD_MAPPING.items():
-                if csv_col in row and row[csv_col]:
-                    value = row[csv_col]
+                for csv_col, db_field in CSV_FIELD_MAPPING.items():
+                    if csv_col in row and row[csv_col]:
+                        value = row[csv_col]
 
-                    # Parse timestamp
-                    if db_field == "timestamp":
-                        normalized[db_field] = parser.parse(value)
-                    # Parse integers
-                    elif db_field in ["wind_direction_deg", "humidity_pct",
-                                     "indoor_humidity_pct", "sensor1_humidity_pct",
-                                     "outdoor_battery", "sensor1_battery"]:
-                        try:
-                            normalized[db_field] = int(float(value))
-                        except (ValueError, TypeError):
-                            normalized[db_field] = None
-                    # Parse floats
-                    else:
-                        try:
-                            normalized[db_field] = float(value)
-                        except (ValueError, TypeError):
-                            normalized[db_field] = None
+                        # C3: Parse timestamp with error handling
+                        if db_field == "timestamp":
+                            try:
+                                normalized[db_field] = parser.parse(value)
+                            except (ValueError, parser.ParserError) as e:
+                                logger.warning(f"Invalid timestamp format: {value}")
+                                continue  # Skip this row
+                        # Parse integers
+                        elif db_field in ["wind_direction_deg", "humidity_pct",
+                                         "indoor_humidity_pct", "sensor1_humidity_pct",
+                                         "outdoor_battery", "sensor1_battery"]:
+                            try:
+                                normalized[db_field] = int(float(value))
+                            except (ValueError, TypeError):
+                                normalized[db_field] = None
+                        # Parse floats
+                        else:
+                            try:
+                                normalized[db_field] = float(value)
+                            except (ValueError, TypeError):
+                                normalized[db_field] = None
 
-            if "timestamp" in normalized:
-                readings.append(normalized)
+                if "timestamp" in normalized:
+                    readings.append(normalized)
+
+    except (IOError, PermissionError) as e:
+        logger.error(f"Failed to read CSV file {csv_path}: {e}")
+        raise
 
     return readings
 
 
-def import_csv_data(csv_path: Path, db: Session) -> Dict[str, int]:
+def import_csv_data(csv_path: Path, db: Optional[Session]) -> Dict[str, int]:
     """Import CSV data into database and return statistics"""
     readings = parse_csv_file(csv_path)
 
+    # I3: Make the signature honest about accepting None
     if not db:
         # Return early for testing without db
         return {"total_rows": len(readings), "imported": 0, "duplicates": 0, "errors": 0}
@@ -96,24 +113,29 @@ def import_csv_data(csv_path: Path, db: Session) -> Dict[str, int]:
     duplicates = 0
     errors = 0
 
-    # Batch insert with conflict handling
-    for reading in readings:
-        try:
-            stmt = insert(WeatherReading).values(**reading)
-            stmt = stmt.on_conflict_do_nothing(index_elements=['timestamp'])
-            result = db.execute(stmt)
+    # I2: Add transaction rollback on error
+    try:
+        # Batch insert with conflict handling
+        for reading in readings:
+            try:
+                stmt = insert(WeatherReading).values(**reading)
+                stmt = stmt.on_conflict_do_nothing(index_elements=['timestamp'])
+                result = db.execute(stmt)
 
-            if result.rowcount > 0:
-                imported += 1
-            else:
-                duplicates += 1
-        except Exception as e:
-            logger.error(f"Error importing row: {e}")
-            errors += 1
+                if result.rowcount > 0:
+                    imported += 1
+                else:
+                    duplicates += 1
+            except Exception as e:
+                logger.error(f"Error importing row: {e}")
+                errors += 1
 
-    db.commit()
-
-    logger.info(f"Import complete: {imported} imported, {duplicates} duplicates, {errors} errors")
+        db.commit()
+        logger.info(f"Import complete: {imported} imported, {duplicates} duplicates, {errors} errors")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Import failed, rolling back: {e}")
+        raise
 
     return {
         "total_rows": len(readings),
