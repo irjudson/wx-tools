@@ -15,6 +15,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
+logger.info("Starting Weather Station Service v1.0.0")
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
