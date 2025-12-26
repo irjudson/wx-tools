@@ -30,3 +30,4 @@ def test_import_csv_from_path():
     assert response.status_code == 200
     data = response.json()
     assert "imported" in data
+    assert data["total_rows"] == 2
