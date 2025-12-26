@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, Float, DateTime, String
 from src.database import Base
-from datetime import datetime
 
 
 class WeatherReading(Base):
