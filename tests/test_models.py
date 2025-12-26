@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.database import Base
-from src.models import WeatherReading
+from src.models import WeatherReading, Configuration
 
 
 @pytest.fixture
@@ -29,3 +29,20 @@ def test_weather_reading_creation(test_db):
 
     assert reading.timestamp is not None
     assert reading.outdoor_temp_f == 42.1
+
+
+def test_configuration_creation(test_db):
+    config = Configuration(
+        key="test_key",
+        value="test_value"
+    )
+    test_db.add(config)
+    test_db.commit()
+
+    assert config.key == "test_key"
+    assert config.value == "test_value"
+
+    # Test retrieval
+    retrieved = test_db.query(Configuration).filter_by(key="test_key").first()
+    assert retrieved is not None
+    assert retrieved.value == "test_value"

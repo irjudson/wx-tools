@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 
 
@@ -7,8 +8,7 @@ class Settings(BaseSettings):
     station_passkey: str
     log_level: str = "INFO"
 
-    class Config:
-        env_file = ".env"
+    model_config = ConfigDict(env_file=".env")
 
 
 _settings: Optional[Settings] = None
