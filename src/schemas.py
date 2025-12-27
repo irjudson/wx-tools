@@ -41,15 +41,45 @@ class StationUpload(BaseModel):
 
 
 class WeatherReadingResponse(BaseModel):
-    """Weather reading response with key metrics
-
-    This is a summary view. Full data model includes 30+ fields.
-    """
+    """Weather reading response with all metrics"""
     timestamp: datetime
+    # Outdoor conditions
     outdoor_temp_f: Optional[float]
+    feels_like_f: Optional[float]
+    dew_point_f: Optional[float]
     humidity_pct: Optional[int]
+    # Wind
     wind_speed_mph: Optional[float]
+    wind_gust_mph: Optional[float]
+    max_daily_gust_mph: Optional[float]
+    wind_direction_deg: Optional[int]
+    # Precipitation
+    rain_rate_in_hr: Optional[float]
+    event_rain_in: Optional[float]
+    daily_rain_in: Optional[float]
+    weekly_rain_in: Optional[float]
+    monthly_rain_in: Optional[float]
+    yearly_rain_in: Optional[float]
+    total_rain_in: Optional[float]
+    # Atmospheric
+    relative_pressure_inhg: Optional[float]
+    absolute_pressure_inhg: Optional[float]
+    # Solar & UV
+    uv_index: Optional[float]
     solar_radiation_wm2: Optional[float]
+    # Indoor
+    indoor_temp_f: Optional[float]
+    indoor_humidity_pct: Optional[int]
+    indoor_feels_like_f: Optional[float]
+    indoor_dew_point_f: Optional[float]
+    # Sensor 1
+    sensor1_temp_f: Optional[float]
+    sensor1_humidity_pct: Optional[int]
+    sensor1_feels_like_f: Optional[float]
+    sensor1_dew_point_f: Optional[float]
+    # Battery
+    outdoor_battery: Optional[int]
+    sensor1_battery: Optional[int]
 
     model_config = ConfigDict(from_attributes=True)
 
