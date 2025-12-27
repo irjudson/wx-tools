@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException, Form, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, Form, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pathlib import Path
 from datetime import datetime
@@ -74,6 +75,9 @@ MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Initialize Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/api/health")
@@ -374,6 +378,6 @@ async def update_station_config(config: StationConfigRequest):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root():
+async def root(request: Request):
     """Serve main dashboard page"""
-    return "<html><body><h1>Weather Station Service</h1></body></html>"
+    return templates.TemplateResponse("index.html", {"request": request})
