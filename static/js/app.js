@@ -67,12 +67,10 @@ async function loadLatestReading() {
 
         container.innerHTML = `
             <p><strong>Time:</strong> ${formatDateTime(data.timestamp)}</p>
-            <p><strong>Temperature:</strong> ${data.tempf !== null ? data.tempf.toFixed(1) + '°F' : 'N/A'}</p>
-            <p><strong>Humidity:</strong> ${data.humidity !== null ? data.humidity + '%' : 'N/A'}</p>
-            <p><strong>Wind Speed:</strong> ${data.windspeedmph !== null ? data.windspeedmph.toFixed(1) + ' mph' : 'N/A'}</p>
-            <p><strong>Wind Direction:</strong> ${data.winddir !== null ? data.winddir + '°' : 'N/A'}</p>
-            <p><strong>Solar Radiation:</strong> ${data.solarradiation !== null ? data.solarradiation.toFixed(1) + ' W/m²' : 'N/A'}</p>
-            <p><strong>Barometer:</strong> ${data.baromrelin !== null ? data.baromrelin.toFixed(2) + ' inHg' : 'N/A'}</p>
+            <p><strong>Temperature:</strong> ${data.outdoor_temp_f !== null ? data.outdoor_temp_f.toFixed(1) + '°F' : 'N/A'}</p>
+            <p><strong>Humidity:</strong> ${data.humidity_pct !== null ? data.humidity_pct + '%' : 'N/A'}</p>
+            <p><strong>Wind Speed:</strong> ${data.wind_speed_mph !== null ? data.wind_speed_mph.toFixed(1) + ' mph' : 'N/A'}</p>
+            <p><strong>Solar Radiation:</strong> ${data.solar_radiation_wm2 !== null ? data.solar_radiation_wm2.toFixed(1) + ' W/m²' : 'N/A'}</p>
         `;
     } catch (error) {
         container.innerHTML = `<p class="error">No readings available</p>`;
@@ -96,7 +94,7 @@ async function loadDatabaseStats() {
             <p><strong>Total Readings:</strong> ${data.total_readings.toLocaleString()}</p>
             <p><strong>First Reading:</strong> ${data.first_reading ? formatDateTime(data.first_reading) : 'N/A'}</p>
             <p><strong>Last Reading:</strong> ${data.last_reading ? formatDateTime(data.last_reading) : 'N/A'}</p>
-            <p><strong>Date Range:</strong> ${data.date_range_days !== null ? data.date_range_days.toFixed(1) + ' days' : 'N/A'}</p>
+            <p><strong>Date Range:</strong> ${data.coverage_days !== null && data.coverage_days !== undefined ? data.coverage_days.toFixed(1) + ' days' : 'N/A'}</p>
         `;
     } catch (error) {
         container.innerHTML = `<p class="error">Failed to load statistics</p>`;
