@@ -5,6 +5,14 @@ from typing import List, Tuple, Dict, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
+# Security: Whitelist for SQL injection prevention
+ALLOWED_BUCKET_SIZES = {
+    '1 minute', '2 minutes', '10 minutes', '30 minutes',
+    '2 hours', '6 hours', '1 day'
+}
+
+ALLOWED_ANGLE_COLUMNS = {'wind_direction_deg'}
+
 
 def calculate_bucket_size(start: datetime, end: datetime) -> str:
     """Calculate appropriate time bucket size based on date range.
@@ -47,11 +55,16 @@ def calculate_circular_mean_sql(column_name: str) -> str:
     Normalizes result to 0-360 range.
 
     Args:
-        column_name: Name of the column containing angles in degrees
+        column_name: Name of the column containing angles in degrees (must be from allowed list)
 
     Returns:
         SQL expression for circular mean in degrees (0-360 range)
+
+    Raises:
+        ValueError: If column_name not in whitelist
     """
+    if column_name not in ALLOWED_ANGLE_COLUMNS:
+        raise ValueError(f"Invalid column name for circular mean: {column_name}")
     return f"""
         CASE
             WHEN COUNT({column_name}) > 0 THEN
@@ -111,6 +124,10 @@ def get_sampled_readings(
 
     # Calculate appropriate bucket size
     bucket_size = calculate_bucket_size(start, end)
+
+    # Validate bucket size against whitelist for SQL injection prevention
+    if bucket_size not in ALLOWED_BUCKET_SIZES:
+        raise ValueError(f"Invalid bucket size: {bucket_size}")
 
     # Build SQL query with TimescaleDB time_bucket
     # Using circular mean for wind direction, AVG for temps/humidity/pressure,
