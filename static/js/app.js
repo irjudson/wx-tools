@@ -131,12 +131,7 @@ async function loadDatabaseStats() {
 }
 
 // Chart instances
-let charts = {
-    temperature: null,
-    humidity: null,
-    wind: null,
-    solar: null
-};
+let charts = {};
 
 async function loadAllCharts() {
     try {
@@ -168,44 +163,231 @@ async function loadAllCharts() {
             });
         });
 
-        // Temperature Chart
-        createOrUpdateChart('temperature', 'temperature-chart', {
+        // Outdoor Conditions
+        createOrUpdateChart('outdoor-temp', 'outdoor-temp-chart', {
             label: 'Temperature (°F)',
             data: readings.map(r => r.outdoor_temp_f),
             borderColor: '#ef4444',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            yAxisLabel: 'Temperature (°F)'
+            backgroundColor: 'rgba(239, 68, 68, 0.1)'
         }, labels);
 
-        // Humidity Chart
-        createOrUpdateChart('humidity', 'humidity-chart', {
+        createOrUpdateChart('outdoor-humidity', 'outdoor-humidity-chart', {
             label: 'Humidity (%)',
             data: readings.map(r => r.humidity_pct),
             borderColor: '#3b82f6',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            yAxisLabel: 'Humidity (%)',
             yMin: 0,
             yMax: 100
         }, labels);
 
-        // Wind Speed Chart
-        createOrUpdateChart('wind', 'wind-chart', {
+        createOrUpdateChart('feels-like', 'feels-like-chart', {
+            label: 'Feels Like (°F)',
+            data: readings.map(r => r.feels_like_f),
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249, 115, 22, 0.1)'
+        }, labels);
+
+        createOrUpdateChart('dew-point', 'dew-point-chart', {
+            label: 'Dew Point (°F)',
+            data: readings.map(r => r.dew_point_f),
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.1)'
+        }, labels);
+
+        // Wind Conditions
+        createOrUpdateChart('wind-speed', 'wind-speed-chart', {
             label: 'Wind Speed (mph)',
             data: readings.map(r => r.wind_speed_mph),
             borderColor: '#10b981',
             backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            yAxisLabel: 'Wind Speed (mph)',
             yMin: 0
         }, labels);
 
-        // Solar Radiation Chart
-        createOrUpdateChart('solar', 'solar-chart', {
+        createOrUpdateChart('wind-gust', 'wind-gust-chart', {
+            label: 'Wind Gust (mph)',
+            data: readings.map(r => r.wind_gust_mph),
+            borderColor: '#14b8a6',
+            backgroundColor: 'rgba(20, 184, 166, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('max-gust', 'max-gust-chart', {
+            label: 'Max Daily Gust (mph)',
+            data: readings.map(r => r.max_daily_gust_mph),
+            borderColor: '#0d9488',
+            backgroundColor: 'rgba(13, 148, 136, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('wind-direction', 'wind-direction-chart', {
+            label: 'Wind Direction (°)',
+            data: readings.map(r => r.wind_direction_deg),
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+            yMin: 0,
+            yMax: 360
+        }, labels);
+
+        // Atmospheric Pressure
+        createOrUpdateChart('relative-pressure', 'relative-pressure-chart', {
+            label: 'Relative Pressure (inHg)',
+            data: readings.map(r => r.relative_pressure_inhg),
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)'
+        }, labels);
+
+        createOrUpdateChart('absolute-pressure', 'absolute-pressure-chart', {
+            label: 'Absolute Pressure (inHg)',
+            data: readings.map(r => r.absolute_pressure_inhg),
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)'
+        }, labels);
+
+        // Solar & UV
+        createOrUpdateChart('solar-radiation', 'solar-radiation-chart', {
             label: 'Solar Radiation (W/m²)',
             data: readings.map(r => r.solar_radiation_wm2),
             borderColor: '#f59e0b',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            yAxisLabel: 'Solar Radiation (W/m²)',
             yMin: 0
+        }, labels);
+
+        createOrUpdateChart('uv-index', 'uv-index-chart', {
+            label: 'UV Index',
+            data: readings.map(r => r.uv_index),
+            borderColor: '#eab308',
+            backgroundColor: 'rgba(234, 179, 8, 0.1)',
+            yMin: 0
+        }, labels);
+
+        // Precipitation
+        createOrUpdateChart('hourly-rain', 'hourly-rain-chart', {
+            label: 'Hourly Rain (in/hr)',
+            data: readings.map(r => r.rain_rate_in_hr),
+            borderColor: '#0ea5e9',
+            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('daily-rain', 'daily-rain-chart', {
+            label: 'Daily Rain (in)',
+            data: readings.map(r => r.daily_rain_in),
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('event-rain', 'event-rain-chart', {
+            label: 'Event Rain (in)',
+            data: readings.map(r => r.event_rain_in),
+            borderColor: '#0369a1',
+            backgroundColor: 'rgba(3, 105, 161, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('weekly-rain', 'weekly-rain-chart', {
+            label: 'Weekly Rain (in)',
+            data: readings.map(r => r.weekly_rain_in),
+            borderColor: '#075985',
+            backgroundColor: 'rgba(7, 89, 133, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('monthly-rain', 'monthly-rain-chart', {
+            label: 'Monthly Rain (in)',
+            data: readings.map(r => r.monthly_rain_in),
+            borderColor: '#0c4a6e',
+            backgroundColor: 'rgba(12, 74, 110, 0.1)',
+            yMin: 0
+        }, labels);
+
+        createOrUpdateChart('yearly-rain', 'yearly-rain-chart', {
+            label: 'Yearly Rain (in)',
+            data: readings.map(r => r.yearly_rain_in),
+            borderColor: '#082f49',
+            backgroundColor: 'rgba(8, 47, 73, 0.1)',
+            yMin: 0
+        }, labels);
+
+        // Indoor Conditions
+        createOrUpdateChart('indoor-temp', 'indoor-temp-chart', {
+            label: 'Indoor Temperature (°F)',
+            data: readings.map(r => r.indoor_temp_f),
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)'
+        }, labels);
+
+        createOrUpdateChart('indoor-humidity', 'indoor-humidity-chart', {
+            label: 'Indoor Humidity (%)',
+            data: readings.map(r => r.indoor_humidity_pct),
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            yMin: 0,
+            yMax: 100
+        }, labels);
+
+        createOrUpdateChart('indoor-feels-like', 'indoor-feels-like-chart', {
+            label: 'Indoor Feels Like (°F)',
+            data: readings.map(r => r.indoor_feels_like_f),
+            borderColor: '#ea580c',
+            backgroundColor: 'rgba(234, 88, 12, 0.1)'
+        }, labels);
+
+        createOrUpdateChart('indoor-dew-point', 'indoor-dew-point-chart', {
+            label: 'Indoor Dew Point (°F)',
+            data: readings.map(r => r.indoor_dew_point_f),
+            borderColor: '#0891b2',
+            backgroundColor: 'rgba(8, 145, 178, 0.1)'
+        }, labels);
+
+        // Sensor 1
+        createOrUpdateChart('sensor1-temp', 'sensor1-temp-chart', {
+            label: 'Sensor 1 Temperature (°F)',
+            data: readings.map(r => r.sensor1_temp_f),
+            borderColor: '#be123c',
+            backgroundColor: 'rgba(190, 18, 60, 0.1)'
+        }, labels);
+
+        createOrUpdateChart('sensor1-humidity', 'sensor1-humidity-chart', {
+            label: 'Sensor 1 Humidity (%)',
+            data: readings.map(r => r.sensor1_humidity_pct),
+            borderColor: '#1d4ed8',
+            backgroundColor: 'rgba(29, 78, 216, 0.1)',
+            yMin: 0,
+            yMax: 100
+        }, labels);
+
+        createOrUpdateChart('sensor1-feels-like', 'sensor1-feels-like-chart', {
+            label: 'Sensor 1 Feels Like (°F)',
+            data: readings.map(r => r.sensor1_feels_like_f),
+            borderColor: '#c2410c',
+            backgroundColor: 'rgba(194, 65, 12, 0.1)'
+        }, labels);
+
+        createOrUpdateChart('sensor1-dew-point', 'sensor1-dew-point-chart', {
+            label: 'Sensor 1 Dew Point (°F)',
+            data: readings.map(r => r.sensor1_dew_point_f),
+            borderColor: '#0e7490',
+            backgroundColor: 'rgba(14, 116, 144, 0.1)'
+        }, labels);
+
+        // Battery Status
+        createOrUpdateChart('outdoor-battery', 'outdoor-battery-chart', {
+            label: 'Outdoor Battery',
+            data: readings.map(r => r.outdoor_battery),
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22, 163, 74, 0.1)',
+            yMin: 0,
+            yMax: 1
+        }, labels);
+
+        createOrUpdateChart('sensor1-battery', 'sensor1-battery-chart', {
+            label: 'Sensor 1 Battery',
+            data: readings.map(r => r.sensor1_battery),
+            borderColor: '#15803d',
+            backgroundColor: 'rgba(21, 128, 61, 0.1)',
+            yMin: 0,
+            yMax: 1
         }, labels);
 
     } catch (error) {
@@ -681,15 +863,35 @@ function displayExplorerResults(readings) {
     const headerRow = document.createElement('tr');
     const headers = [
         'Timestamp',
-        'Temp (°F)',
-        'Humidity (%)',
-        'Wind (mph)',
-        'Gust (mph)',
-        'Direction (°)',
-        'Rain (in)',
-        'Pressure (inHg)',
+        'Outdoor Temp (°F)',
+        'Outdoor Humidity (%)',
+        'Feels Like (°F)',
+        'Dew Point (°F)',
+        'Wind Speed (mph)',
+        'Wind Gust (mph)',
+        'Max Daily Gust (mph)',
+        'Wind Direction (°)',
+        'Hourly Rain (in/hr)',
+        'Event Rain (in)',
+        'Daily Rain (in)',
+        'Weekly Rain (in)',
+        'Monthly Rain (in)',
+        'Yearly Rain (in)',
+        'Total Rain (in)',
+        'Relative Pressure (inHg)',
+        'Absolute Pressure (inHg)',
         'UV Index',
-        'Solar (W/m²)'
+        'Solar Radiation (W/m²)',
+        'Indoor Temp (°F)',
+        'Indoor Humidity (%)',
+        'Indoor Feels Like (°F)',
+        'Indoor Dew Point (°F)',
+        'Sensor 1 Temp (°F)',
+        'Sensor 1 Humidity (%)',
+        'Sensor 1 Feels Like (°F)',
+        'Sensor 1 Dew Point (°F)',
+        'Outdoor Battery',
+        'Sensor 1 Battery'
     ];
 
     headers.forEach(header => {
@@ -708,13 +910,33 @@ function displayExplorerResults(readings) {
             new Date(reading.timestamp).toLocaleString(),
             reading.outdoor_temp_f?.toFixed(1) || '-',
             reading.humidity_pct || '-',
+            reading.feels_like_f?.toFixed(1) || '-',
+            reading.dew_point_f?.toFixed(1) || '-',
             reading.wind_speed_mph?.toFixed(1) || '-',
             reading.wind_gust_mph?.toFixed(1) || '-',
+            reading.max_daily_gust_mph?.toFixed(1) || '-',
             reading.wind_direction_deg || '-',
+            reading.rain_rate_in_hr?.toFixed(3) || '-',
+            reading.event_rain_in?.toFixed(3) || '-',
             reading.daily_rain_in?.toFixed(3) || '-',
+            reading.weekly_rain_in?.toFixed(3) || '-',
+            reading.monthly_rain_in?.toFixed(3) || '-',
+            reading.yearly_rain_in?.toFixed(3) || '-',
+            reading.total_rain_in?.toFixed(3) || '-',
             reading.relative_pressure_inhg?.toFixed(2) || '-',
+            reading.absolute_pressure_inhg?.toFixed(2) || '-',
             reading.uv_index?.toFixed(1) || '-',
-            reading.solar_radiation_wm2?.toFixed(1) || '-'
+            reading.solar_radiation_wm2?.toFixed(1) || '-',
+            reading.indoor_temp_f?.toFixed(1) || '-',
+            reading.indoor_humidity_pct || '-',
+            reading.indoor_feels_like_f?.toFixed(1) || '-',
+            reading.indoor_dew_point_f?.toFixed(1) || '-',
+            reading.sensor1_temp_f?.toFixed(1) || '-',
+            reading.sensor1_humidity_pct || '-',
+            reading.sensor1_feels_like_f?.toFixed(1) || '-',
+            reading.sensor1_dew_point_f?.toFixed(1) || '-',
+            reading.outdoor_battery || '-',
+            reading.sensor1_battery || '-'
         ];
 
         cells.forEach(cell => {

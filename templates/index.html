@@ -61,25 +61,175 @@
                     </div>
                 </div>
 
+                <!-- Outdoor Conditions -->
+                <h3 class="section-heading">Outdoor Conditions</h3>
                 <div class="charts-grid">
                     <div class="chart-container">
-                        <h3>Temperature</h3>
-                        <canvas id="temperature-chart"></canvas>
+                        <h3>Temperature (°F)</h3>
+                        <canvas id="outdoor-temp-chart"></canvas>
                     </div>
 
                     <div class="chart-container">
-                        <h3>Humidity</h3>
-                        <canvas id="humidity-chart"></canvas>
+                        <h3>Humidity (%)</h3>
+                        <canvas id="outdoor-humidity-chart"></canvas>
                     </div>
 
                     <div class="chart-container">
-                        <h3>Wind Speed</h3>
-                        <canvas id="wind-chart"></canvas>
+                        <h3>Feels Like (°F)</h3>
+                        <canvas id="feels-like-chart"></canvas>
                     </div>
 
                     <div class="chart-container">
-                        <h3>Solar Radiation</h3>
-                        <canvas id="solar-chart"></canvas>
+                        <h3>Dew Point (°F)</h3>
+                        <canvas id="dew-point-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Wind Conditions -->
+                <h3 class="section-heading">Wind Conditions</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Wind Speed (mph)</h3>
+                        <canvas id="wind-speed-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Wind Gust (mph)</h3>
+                        <canvas id="wind-gust-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Max Daily Gust (mph)</h3>
+                        <canvas id="max-gust-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Wind Direction (°)</h3>
+                        <canvas id="wind-direction-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Atmospheric -->
+                <h3 class="section-heading">Atmospheric Pressure</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Relative Pressure (inHg)</h3>
+                        <canvas id="relative-pressure-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Absolute Pressure (inHg)</h3>
+                        <canvas id="absolute-pressure-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Solar & UV -->
+                <h3 class="section-heading">Solar & UV</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Solar Radiation (W/m²)</h3>
+                        <canvas id="solar-radiation-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>UV Index</h3>
+                        <canvas id="uv-index-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Rain -->
+                <h3 class="section-heading">Precipitation</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Hourly Rain (in/hr)</h3>
+                        <canvas id="hourly-rain-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Daily Rain (in)</h3>
+                        <canvas id="daily-rain-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Event Rain (in)</h3>
+                        <canvas id="event-rain-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Weekly Rain (in)</h3>
+                        <canvas id="weekly-rain-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Monthly Rain (in)</h3>
+                        <canvas id="monthly-rain-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Yearly Rain (in)</h3>
+                        <canvas id="yearly-rain-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Indoor Conditions -->
+                <h3 class="section-heading">Indoor Conditions</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Indoor Temperature (°F)</h3>
+                        <canvas id="indoor-temp-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Indoor Humidity (%)</h3>
+                        <canvas id="indoor-humidity-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Indoor Feels Like (°F)</h3>
+                        <canvas id="indoor-feels-like-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Indoor Dew Point (°F)</h3>
+                        <canvas id="indoor-dew-point-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Sensor 1 -->
+                <h3 class="section-heading">Sensor 1 (External Sensor)</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Sensor 1 Temperature (°F)</h3>
+                        <canvas id="sensor1-temp-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Sensor 1 Humidity (%)</h3>
+                        <canvas id="sensor1-humidity-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Sensor 1 Feels Like (°F)</h3>
+                        <canvas id="sensor1-feels-like-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Sensor 1 Dew Point (°F)</h3>
+                        <canvas id="sensor1-dew-point-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Battery Status -->
+                <h3 class="section-heading">System Status</h3>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Outdoor Battery</h3>
+                        <canvas id="outdoor-battery-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Sensor 1 Battery</h3>
+                        <canvas id="sensor1-battery-chart"></canvas>
                     </div>
                 </div>
             </section>
