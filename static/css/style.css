@@ -223,6 +223,13 @@ h4 {
     max-height: 240px;
 }
 
+@supports not (backdrop-filter: blur(10px)) {
+    .chart-container {
+        background: var(--surface);
+        box-shadow: var(--shadow);
+    }
+}
+
 @media (max-width: 1400px) {
     .charts-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1191,4 +1198,30 @@ h4 {
 .empty-state h3 {
     margin-bottom: 0.5rem;
     color: var(--text-primary);
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .date-filter-dropdown {
+        min-width: calc(100vw - 2rem);
+        left: 1rem;
+        right: 1rem;
+    }
+
+    .filter-content {
+        flex-direction: column;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .chart-container:hover {
+        transform: none;
+    }
 }
