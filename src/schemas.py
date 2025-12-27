@@ -36,6 +36,8 @@ class StationUpload(BaseModel):
     dewPoint1: Optional[float] = None
     batt1: Optional[int] = None
     battout: Optional[int] = None
+    hourlyrainin: Optional[float] = None
+    stationtype: Optional[str] = None
 
 
 class WeatherReadingResponse(BaseModel):

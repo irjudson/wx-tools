@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 def parse_station_timestamp(dateutc: str) -> datetime:
     """Parse station timestamp to datetime with UTC timezone"""
     from dateutil import parser
+    # Replace + with space (common in URL encoding)
+    dateutc = dateutc.replace('+', ' ')
     dt = parser.parse(dateutc)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)

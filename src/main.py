@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import logging
 import secrets
+from urllib.parse import unquote, parse_qs
 from src.config import get_settings
 from src.database import get_db, SessionLocal
 from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest, MQTTConfigRequest, StationConfigRequest
@@ -90,42 +91,43 @@ async def health_check():
     }
 
 
-@app.post("/api/weather/upload")
-async def upload_weather_data(
-    PASSKEY: str = Form(...),
-    dateutc: str = Form(...),
-    tempf: float = Form(None),
-    feelsLike: float = Form(None),
-    dewPoint: float = Form(None),
-    humidity: int = Form(None),
-    windspeedmph: float = Form(None),
-    windgustmph: float = Form(None),
-    maxdailygust: float = Form(None),
-    winddir: int = Form(None),
-    rainratein: float = Form(None),
-    eventrainin: float = Form(None),
-    dailyrainin: float = Form(None),
-    weeklyrainin: float = Form(None),
-    monthlyrainin: float = Form(None),
-    yearlyrainin: float = Form(None),
-    totalrainin: float = Form(None),
-    baromrelin: float = Form(None),
-    baromabsin: float = Form(None),
-    uv: float = Form(None),
-    solarradiation: float = Form(None),
-    tempinf: float = Form(None),
-    humidityin: int = Form(None),
-    feelsLikein: float = Form(None),
-    dewPointin: float = Form(None),
-    temp1f: float = Form(None),
-    humidity1: int = Form(None),
-    feelsLike1: float = Form(None),
-    dewPoint1: float = Form(None),
-    batt1: int = Form(None),
-    battout: int = Form(None),
-    db: Session = Depends(get_db)
+async def _process_weather_upload(
+    PASSKEY: str,
+    dateutc: str,
+    tempf: float = None,
+    feelsLike: float = None,
+    dewPoint: float = None,
+    humidity: int = None,
+    windspeedmph: float = None,
+    windgustmph: float = None,
+    maxdailygust: float = None,
+    winddir: int = None,
+    rainratein: float = None,
+    eventrainin: float = None,
+    dailyrainin: float = None,
+    weeklyrainin: float = None,
+    monthlyrainin: float = None,
+    yearlyrainin: float = None,
+    totalrainin: float = None,
+    baromrelin: float = None,
+    baromabsin: float = None,
+    uv: float = None,
+    solarradiation: float = None,
+    tempinf: float = None,
+    humidityin: int = None,
+    feelsLikein: float = None,
+    dewPointin: float = None,
+    temp1f: float = None,
+    humidity1: int = None,
+    feelsLike1: float = None,
+    dewPoint1: float = None,
+    batt1: int = None,
+    battout: int = None,
+    hourlyrainin: float = None,
+    stationtype: str = None,
+    db: Session = None
 ):
-    """Receive weather data from WS-2902 station"""
+    """Common processing for weather data uploads"""
     # Validate PASSKEY using constant-time comparison to prevent timing attacks
     if not secrets.compare_digest(PASSKEY, get_settings().station_passkey):
         raise HTTPException(status_code=401, detail="Invalid PASSKEY")
@@ -167,8 +169,107 @@ async def upload_weather_data(
 
     # Store reading in database and publish to MQTT
     reading = store_weather_reading(db, upload, mqtt_publisher)
-
     return {"status": "success", "timestamp": reading.timestamp}
+
+
+@app.get("/api/weather/upload")
+@app.get("/data/report")
+@app.get("/weatherstation/updateweatherstation.php")
+async def upload_weather_data_get(
+    PASSKEY: str,
+    dateutc: str,
+    tempf: float = None,
+    feelsLike: float = None,
+    dewPoint: float = None,
+    humidity: int = None,
+    windspeedmph: float = None,
+    windgustmph: float = None,
+    maxdailygust: float = None,
+    winddir: int = None,
+    rainratein: float = None,
+    eventrainin: float = None,
+    dailyrainin: float = None,
+    weeklyrainin: float = None,
+    monthlyrainin: float = None,
+    yearlyrainin: float = None,
+    totalrainin: float = None,
+    baromrelin: float = None,
+    baromabsin: float = None,
+    uv: float = None,
+    solarradiation: float = None,
+    tempinf: float = None,
+    humidityin: int = None,
+    feelsLikein: float = None,
+    dewPointin: float = None,
+    temp1f: float = None,
+    humidity1: int = None,
+    feelsLike1: float = None,
+    dewPoint1: float = None,
+    batt1: int = None,
+    battout: int = None,
+    hourlyrainin: float = None,
+    stationtype: str = None,
+    db: Session = Depends(get_db)
+):
+    """Receive weather data from WS-2902 station via GET (Ambient Weather protocol)"""
+    return await _process_weather_upload(
+        PASSKEY, dateutc, tempf, feelsLike, dewPoint, humidity,
+        windspeedmph, windgustmph, maxdailygust, winddir,
+        rainratein, eventrainin, dailyrainin, weeklyrainin,
+        monthlyrainin, yearlyrainin, totalrainin, baromrelin,
+        baromabsin, uv, solarradiation, tempinf, humidityin,
+        feelsLikein, dewPointin, temp1f, humidity1, feelsLike1,
+        dewPoint1, batt1, battout, hourlyrainin, stationtype, db
+    )
+
+
+@app.post("/api/weather/upload")
+async def upload_weather_data_post(
+    PASSKEY: str = Form(...),
+    dateutc: str = Form(...),
+    tempf: float = Form(None),
+    feelsLike: float = Form(None),
+    dewPoint: float = Form(None),
+    humidity: int = Form(None),
+    windspeedmph: float = Form(None),
+    windgustmph: float = Form(None),
+    maxdailygust: float = Form(None),
+    winddir: int = Form(None),
+    rainratein: float = Form(None),
+    eventrainin: float = Form(None),
+    dailyrainin: float = Form(None),
+    weeklyrainin: float = Form(None),
+    monthlyrainin: float = Form(None),
+    yearlyrainin: float = Form(None),
+    totalrainin: float = Form(None),
+    baromrelin: float = Form(None),
+    baromabsin: float = Form(None),
+    uv: float = Form(None),
+    solarradiation: float = Form(None),
+    tempinf: float = Form(None),
+    humidityin: int = Form(None),
+    feelsLikein: float = Form(None),
+    dewPointin: float = Form(None),
+    temp1f: float = Form(None),
+    humidity1: int = Form(None),
+    feelsLike1: float = Form(None),
+    dewPoint1: float = Form(None),
+    batt1: int = Form(None),
+    battout: int = Form(None),
+    hourlyrainin: float = Form(None),
+    stationtype: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Receive weather data from WS-2902 station via POST"""
+    return await _process_weather_upload(
+        PASSKEY, dateutc, tempf, feelsLike, dewPoint, humidity,
+        windspeedmph, windgustmph, maxdailygust, winddir,
+        rainratein, eventrainin, dailyrainin, weeklyrainin,
+        monthlyrainin, yearlyrainin, totalrainin, baromrelin,
+        baromabsin, uv, solarradiation, tempinf, humidityin,
+        feelsLikein, dewPointin, temp1f, humidity1, feelsLike1,
+        dewPoint1, batt1, battout, hourlyrainin, stationtype, db
+    )
 
 
 @app.post("/api/weather/import")
@@ -381,3 +482,71 @@ async def update_station_config(config: StationConfigRequest):
 async def root(request: Request):
     """Serve main dashboard page"""
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+# Catch-all route MUST be last
+@app.get("/{catchall:path}")
+async def catch_weather_upload(catchall: str, request: Request, db: Session = Depends(get_db)):
+    """Catch-all route for weather stations that encode parameters in the path"""
+    # Check if this looks like a weather upload (contains PASSKEY)
+    if "PASSKEY" not in catchall:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    # URL decode and parse the path
+    decoded = unquote(catchall)
+
+    # Extract query parameters from the path
+    # Format: /path/&PASSKEY=xxx&tempf=yyy or /path/%26PASSKEY%3Dxxx...
+    if "&" in decoded:
+        # Strip leading path components
+        param_string = decoded.split("&", 1)[1]
+        params = {}
+        for pair in param_string.split("&"):
+            if "=" in pair:
+                key, value = pair.split("=", 1)
+                params[key] = value
+
+        # Extract required and optional parameters
+        if "PASSKEY" not in params or "dateutc" not in params:
+            raise HTTPException(status_code=400, detail="Missing required parameters")
+
+        # Convert numeric values
+        def safe_float(v):
+            try: return float(v) if v else None
+            except: return None
+        def safe_int(v):
+            try: return int(float(v)) if v else None
+            except: return None
+
+        return await _process_weather_upload(
+            PASSKEY=params.get("PASSKEY"),
+            dateutc=params.get("dateutc"),
+            tempf=safe_float(params.get("tempf")),
+            humidity=safe_int(params.get("humidity")),
+            windspeedmph=safe_float(params.get("windspeedmph")),
+            windgustmph=safe_float(params.get("windgustmph")),
+            maxdailygust=safe_float(params.get("maxdailygust")),
+            winddir=safe_int(params.get("winddir")),
+            rainratein=safe_float(params.get("rainratein")),
+            eventrainin=safe_float(params.get("eventrainin")),
+            dailyrainin=safe_float(params.get("dailyrainin")),
+            weeklyrainin=safe_float(params.get("weeklyrainin")),
+            monthlyrainin=safe_float(params.get("monthlyrainin")),
+            yearlyrainin=safe_float(params.get("yearlyrainin")),
+            totalrainin=safe_float(params.get("totalrainin")),
+            baromrelin=safe_float(params.get("baromrelin")),
+            baromabsin=safe_float(params.get("baromabsin")),
+            uv=safe_float(params.get("uv")),
+            solarradiation=safe_float(params.get("solarradiation")),
+            tempinf=safe_float(params.get("tempinf")),
+            humidityin=safe_int(params.get("humidityin")),
+            temp1f=safe_float(params.get("temp1f")),
+            humidity1=safe_int(params.get("humidity1")),
+            batt1=safe_int(params.get("batt1")),
+            battout=safe_int(params.get("battout")),
+            hourlyrainin=safe_float(params.get("hourlyrainin")),
+            stationtype=params.get("stationtype"),
+            db=db
+        )
+
+    raise HTTPException(status_code=404, detail="Not Found")
