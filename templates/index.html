@@ -187,19 +187,46 @@
                 </div>
             </section>
 
-            <!-- Data Explorer Section (Placeholder) -->
+            <!-- Data Explorer Section -->
             <section id="explorer" class="content-section">
                 <h2>Data Explorer</h2>
 
-                <div class="info-box">
-                    <h4>Coming Soon</h4>
-                    <p>This section will allow you to explore historical weather data with advanced filtering and visualization options.</p>
-                    <ul>
-                        <li>Query data by date range</li>
-                        <li>Filter by sensor type</li>
-                        <li>Export filtered data to CSV</li>
-                        <li>Generate custom charts</li>
-                    </ul>
+                <div class="explorer-form">
+                    <h3>Query Weather Data</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="explorer-start">Start Date:</label>
+                            <input type="datetime-local" id="explorer-start" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="explorer-end">End Date:</label>
+                            <input type="datetime-local" id="explorer-end" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="explorer-limit">Max Results:</label>
+                            <input type="number" id="explorer-limit" value="1000" min="1" max="10000" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="query-data-btn" class="btn btn-primary">Query Data</button>
+                        <button id="export-csv-btn" class="btn btn-secondary" disabled>Export to CSV</button>
+                        <button id="use-for-solar-btn" class="btn btn-secondary" disabled>Use for Solar Analysis</button>
+                        <button id="use-for-wind-btn" class="btn btn-secondary" disabled>Use for Wind Analysis</button>
+                    </div>
+
+                    <div id="explorer-status" class="status-message"></div>
+                </div>
+
+                <div id="explorer-results" class="results-box">
+                    <h4>Query Results</h4>
+                    <div id="explorer-summary"></div>
+                    <div id="explorer-table-container" class="table-container">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
                 </div>
             </section>
 

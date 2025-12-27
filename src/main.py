@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Form, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pathlib import Path
@@ -393,6 +393,125 @@ async def query_readings(
 async def database_stats(db: Session = Depends(get_db)):
     """Get database statistics"""
     return get_database_stats(db)
+
+
+@app.get("/api/weather/export")
+async def export_readings_csv(
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    limit: Optional[int] = 10000,
+    db: Session = Depends(get_db)
+):
+    """Export weather readings to CSV"""
+    import csv
+    import io
+
+    # Enforce maximum limit
+    if limit is not None and limit > 100000:
+        raise HTTPException(status_code=400, detail="Limit cannot exceed 100000")
+
+    # Validate date range
+    if start and end and start > end:
+        raise HTTPException(status_code=400, detail="Start date must be before end date")
+
+    # Get readings
+    readings = get_readings(db, start, end, limit, 0)
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    if readings:
+        # Get field names from first reading
+        headers = [
+            "Timestamp",
+            "Outdoor Temperature (°F)",
+            "Feels Like (°F)",
+            "Dew Point (°F)",
+            "Humidity (%)",
+            "Wind Speed (mph)",
+            "Wind Gust (mph)",
+            "Max Daily Gust (mph)",
+            "Wind Direction (°)",
+            "Rain Rate (in/hr)",
+            "Event Rain (in)",
+            "Daily Rain (in)",
+            "Weekly Rain (in)",
+            "Monthly Rain (in)",
+            "Yearly Rain (in)",
+            "Total Rain (in)",
+            "Relative Pressure (inHg)",
+            "Absolute Pressure (inHg)",
+            "UV Index",
+            "Solar Radiation (W/m²)",
+            "Indoor Temperature (°F)",
+            "Indoor Humidity (%)",
+            "Indoor Feels Like (°F)",
+            "Indoor Dew Point (°F)",
+            "Sensor 1 Temperature (°F)",
+            "Sensor 1 Humidity (%)",
+            "Sensor 1 Feels Like (°F)",
+            "Sensor 1 Dew Point (°F)",
+            "Outdoor Battery",
+            "Sensor 1 Battery"
+        ]
+        writer.writerow(headers)
+
+        # Write data rows
+        for reading in readings:
+            row = [
+                reading.timestamp.isoformat() if reading.timestamp else "",
+                reading.outdoor_temp_f,
+                reading.feels_like_f,
+                reading.dew_point_f,
+                reading.humidity_pct,
+                reading.wind_speed_mph,
+                reading.wind_gust_mph,
+                reading.max_daily_gust_mph,
+                reading.wind_direction_deg,
+                reading.rain_rate_in_hr,
+                reading.event_rain_in,
+                reading.daily_rain_in,
+                reading.weekly_rain_in,
+                reading.monthly_rain_in,
+                reading.yearly_rain_in,
+                reading.total_rain_in,
+                reading.relative_pressure_inhg,
+                reading.absolute_pressure_inhg,
+                reading.uv_index,
+                reading.solar_radiation_wm2,
+                reading.indoor_temp_f,
+                reading.indoor_humidity_pct,
+                reading.indoor_feels_like_f,
+                reading.indoor_dew_point_f,
+                reading.sensor1_temp_f,
+                reading.sensor1_humidity_pct,
+                reading.sensor1_feels_like_f,
+                reading.sensor1_dew_point_f,
+                reading.outdoor_battery,
+                reading.sensor1_battery
+            ]
+            writer.writerow(row)
+
+    # Get CSV content
+    csv_content = output.getvalue()
+    output.close()
+
+    # Generate filename with date range
+    filename = "weather_data"
+    if start:
+        filename += f"_{start.strftime('%Y%m%d')}"
+    if end:
+        filename += f"_to_{end.strftime('%Y%m%d')}"
+    filename += ".csv"
+
+    # Return as downloadable file
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 @app.post("/api/analysis/solar")

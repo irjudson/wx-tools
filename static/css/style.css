@@ -219,7 +219,8 @@ h4 {
 /* Forms */
 .import-form,
 .analysis-form,
-.settings-form {
+.settings-form,
+.explorer-form {
     background: var(--surface);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -303,6 +304,28 @@ h4 {
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #475569;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
 }
 
 /* Tabs */
@@ -422,6 +445,29 @@ h4 {
 
 .results-box li:last-child {
     border-bottom: none;
+}
+
+/* Table Container */
+.table-container {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.table-container table {
+    min-width: 100%;
+    font-size: 0.875rem;
+}
+
+.table-container th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+    white-space: nowrap;
+}
+
+.table-container td {
+    white-space: nowrap;
 }
 
 /* Info Box */

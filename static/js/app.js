@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startDashboardAutoRefresh(); // Auto-refresh every minute
     initializeImportForm();
     initializeAnalysisForms();
+    initializeDataExplorer();
     loadSettings();
 });
 
@@ -581,6 +582,214 @@ async function saveSettings() {
         btn.disabled = false;
         btn.textContent = 'Save Settings';
     }
+}
+
+// Data Explorer Functions
+let explorerData = null;
+
+function initializeDataExplorer() {
+    const queryBtn = document.getElementById('query-data-btn');
+    const exportBtn = document.getElementById('export-csv-btn');
+    const solarBtn = document.getElementById('use-for-solar-btn');
+    const windBtn = document.getElementById('use-for-wind-btn');
+
+    queryBtn.addEventListener('click', queryExplorerData);
+    exportBtn.addEventListener('click', exportExplorerData);
+    solarBtn.addEventListener('click', () => useDataForAnalysis('solar'));
+    windBtn.addEventListener('click', () => useDataForAnalysis('wind'));
+
+    // Set default date range (last 7 days)
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    document.getElementById('explorer-end').value = formatDateTimeLocal(now);
+    document.getElementById('explorer-start').value = formatDateTimeLocal(weekAgo);
+}
+
+async function queryExplorerData() {
+    const startInput = document.getElementById('explorer-start').value;
+    const endInput = document.getElementById('explorer-end').value;
+    const limit = document.getElementById('explorer-limit').value;
+
+    if (!startInput || !endInput) {
+        showStatus('explorer-status', 'Please select both start and end dates', 'error');
+        return;
+    }
+
+    const queryBtn = document.getElementById('query-data-btn');
+    queryBtn.disabled = true;
+    queryBtn.textContent = 'Querying...';
+
+    try {
+        const start = new Date(startInput).toISOString();
+        const end = new Date(endInput).toISOString();
+
+        const response = await fetch(
+            `/api/weather/readings?start=${start}&end=${end}&limit=${limit}`
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to query data');
+        }
+
+        const data = await response.json();
+        explorerData = { start, end, limit, readings: data };
+
+        displayExplorerResults(data);
+        showStatus('explorer-status', `Found ${data.length} readings`, 'success');
+
+        // Enable action buttons
+        document.getElementById('export-csv-btn').disabled = false;
+        document.getElementById('use-for-solar-btn').disabled = false;
+        document.getElementById('use-for-wind-btn').disabled = false;
+
+    } catch (error) {
+        showStatus('explorer-status', `Query failed: ${error.message}`, 'error');
+        console.error('Explorer query error:', error);
+    } finally {
+        queryBtn.disabled = false;
+        queryBtn.textContent = 'Query Data';
+    }
+}
+
+function displayExplorerResults(readings) {
+    const container = document.getElementById('explorer-results');
+    const summary = document.getElementById('explorer-summary');
+    const tableContainer = document.getElementById('explorer-table-container');
+
+    if (!readings || readings.length === 0) {
+        summary.innerHTML = '<p>No data found for the selected date range.</p>';
+        tableContainer.innerHTML = '';
+        container.classList.add('visible');
+        return;
+    }
+
+    // Display summary
+    const firstReading = new Date(readings[0].timestamp);
+    const lastReading = new Date(readings[readings.length - 1].timestamp);
+
+    summary.innerHTML = `
+        <p><strong>Total Readings:</strong> ${readings.length}</p>
+        <p><strong>Date Range:</strong> ${firstReading.toLocaleString()} to ${lastReading.toLocaleString()}</p>
+    `;
+
+    // Create table
+    const table = document.createElement('table');
+
+    // Header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const headers = [
+        'Timestamp',
+        'Temp (°F)',
+        'Humidity (%)',
+        'Wind (mph)',
+        'Gust (mph)',
+        'Direction (°)',
+        'Rain (in)',
+        'Pressure (inHg)',
+        'UV Index',
+        'Solar (W/m²)'
+    ];
+
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Body
+    const tbody = document.createElement('tbody');
+    readings.forEach(reading => {
+        const row = document.createElement('tr');
+        const cells = [
+            new Date(reading.timestamp).toLocaleString(),
+            reading.outdoor_temp_f?.toFixed(1) || '-',
+            reading.humidity_pct || '-',
+            reading.wind_speed_mph?.toFixed(1) || '-',
+            reading.wind_gust_mph?.toFixed(1) || '-',
+            reading.wind_direction_deg || '-',
+            reading.daily_rain_in?.toFixed(3) || '-',
+            reading.relative_pressure_inhg?.toFixed(2) || '-',
+            reading.uv_index?.toFixed(1) || '-',
+            reading.solar_radiation_wm2?.toFixed(1) || '-'
+        ];
+
+        cells.forEach(cell => {
+            const td = document.createElement('td');
+            td.textContent = cell;
+            row.appendChild(td);
+        });
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    tableContainer.innerHTML = '';
+    tableContainer.appendChild(table);
+    container.classList.add('visible');
+}
+
+function exportExplorerData() {
+    if (!explorerData) {
+        showStatus('explorer-status', 'No data to export', 'error');
+        return;
+    }
+
+    const { start, end, limit } = explorerData;
+    const exportUrl = `/api/weather/export?start=${start}&end=${end}&limit=${limit}`;
+
+    // Trigger download
+    window.location.href = exportUrl;
+    showStatus('explorer-status', 'Downloading CSV...', 'info');
+}
+
+function useDataForAnalysis(type) {
+    if (!explorerData) {
+        showStatus('explorer-status', 'No data to use', 'error');
+        return;
+    }
+
+    const { start, end } = explorerData;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Switch to analysis tab
+    const analysisLink = document.querySelector('[data-section="analysis"]');
+    if (analysisLink) {
+        analysisLink.click();
+    }
+
+    // Wait for section to load, then populate form
+    setTimeout(() => {
+        if (type === 'solar') {
+            document.getElementById('solar-start').value = formatDateTimeLocal(startDate);
+            document.getElementById('solar-end').value = formatDateTimeLocal(endDate);
+
+            // Switch to solar tab
+            const solarTab = document.querySelector('[data-tab="solar"]');
+            if (solarTab) solarTab.click();
+        } else if (type === 'wind') {
+            document.getElementById('wind-start').value = formatDateTimeLocal(startDate);
+            document.getElementById('wind-end').value = formatDateTimeLocal(endDate);
+
+            // Switch to wind tab
+            const windTab = document.querySelector('[data-tab="wind"]');
+            if (windTab) windTab.click();
+        }
+
+        showStatus('explorer-status', `Date range copied to ${type} analysis`, 'success');
+    }, 100);
+}
+
+function formatDateTimeLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 // Utility Functions
