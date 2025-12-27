@@ -538,25 +538,12 @@ function displayImportResults(results) {
 
 // Analysis Functions
 function initializeAnalysisForms() {
-    // Tab switching
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const analysisForms = document.querySelectorAll('.analysis-form');
+    // Set default date range (last 30 days)
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetTab = btn.getAttribute('data-tab');
-
-            tabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            analysisForms.forEach(form => {
-                form.classList.remove('active');
-                if (form.id === `${targetTab}-analysis`) {
-                    form.classList.add('active');
-                }
-            });
-        });
-    });
+    document.getElementById('analysis-end').value = formatDateTimeLocal(now);
+    document.getElementById('analysis-start').value = formatDateTimeLocal(thirtyDaysAgo);
 
     // Solar analysis
     document.getElementById('run-solar-btn').addEventListener('click', runSolarAnalysis);
@@ -566,8 +553,8 @@ function initializeAnalysisForms() {
 }
 
 async function runSolarAnalysis() {
-    const startInput = document.getElementById('solar-start').value;
-    const endInput = document.getElementById('solar-end').value;
+    const startInput = document.getElementById('analysis-start').value;
+    const endInput = document.getElementById('analysis-end').value;
     const panelArea = parseFloat(document.getElementById('solar-panel-area').value);
     const efficiency = parseFloat(document.getElementById('solar-efficiency').value);
 
@@ -636,8 +623,8 @@ function displaySolarResults(results) {
 }
 
 async function runWindAnalysis() {
-    const startInput = document.getElementById('wind-start').value;
-    const endInput = document.getElementById('wind-end').value;
+    const startInput = document.getElementById('analysis-start').value;
+    const endInput = document.getElementById('analysis-end').value;
     const rotorDiameter = parseFloat(document.getElementById('wind-rotor-diameter').value);
     const efficiency = parseFloat(document.getElementById('wind-efficiency').value);
 
@@ -993,25 +980,12 @@ function useDataForAnalysis(type) {
         analysisLink.click();
     }
 
-    // Wait for section to load, then populate form
+    // Wait for section to load, then populate shared date range
     setTimeout(() => {
-        if (type === 'solar') {
-            document.getElementById('solar-start').value = formatDateTimeLocal(startDate);
-            document.getElementById('solar-end').value = formatDateTimeLocal(endDate);
+        document.getElementById('analysis-start').value = formatDateTimeLocal(startDate);
+        document.getElementById('analysis-end').value = formatDateTimeLocal(endDate);
 
-            // Switch to solar tab
-            const solarTab = document.querySelector('[data-tab="solar"]');
-            if (solarTab) solarTab.click();
-        } else if (type === 'wind') {
-            document.getElementById('wind-start').value = formatDateTimeLocal(startDate);
-            document.getElementById('wind-end').value = formatDateTimeLocal(endDate);
-
-            // Switch to wind tab
-            const windTab = document.querySelector('[data-tab="wind"]');
-            if (windTab) windTab.click();
-        }
-
-        showStatus('explorer-status', `Date range copied to ${type} analysis`, 'success');
+        showStatus('explorer-status', `Date range copied to energy analysis`, 'success');
     }, 100);
 }
 

@@ -338,42 +338,34 @@ h4 {
     margin-top: 1.5rem;
 }
 
-/* Tabs */
-.analysis-tabs {
-    display: flex;
-    gap: 0.5rem;
+/* Analysis Grid */
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.analysis-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
+.analysis-card h3 {
+    font-size: 1.25rem;
     margin-bottom: 1.5rem;
-    border-bottom: 2px solid var(--border-color);
-}
-
-.tab-btn {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.tab-btn:hover {
-    color: var(--text-primary);
-}
-
-.tab-btn.active {
     color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
 }
 
-.analysis-form {
-    display: none;
-}
-
-.analysis-form.active {
-    display: block;
+@media (max-width: 900px) {
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Status Messages */
