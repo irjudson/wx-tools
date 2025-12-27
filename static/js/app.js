@@ -343,10 +343,10 @@ function displayImportResults(results) {
     container.innerHTML = `
         <h4>Import Results</h4>
         <ul>
-            <li><strong>Rows Processed:</strong> ${results.rows_processed}</li>
-            <li><strong>Rows Inserted:</strong> ${results.rows_inserted}</li>
-            <li><strong>Rows Skipped:</strong> ${results.rows_skipped}</li>
-            <li><strong>Processing Time:</strong> ${results.processing_time_seconds.toFixed(2)} seconds</li>
+            <li><strong>Total Rows:</strong> ${results.total_rows}</li>
+            <li><strong>Imported:</strong> ${results.imported}</li>
+            <li><strong>Duplicates:</strong> ${results.duplicates}</li>
+            <li><strong>Errors:</strong> ${results.errors}</li>
         </ul>
     `;
 
