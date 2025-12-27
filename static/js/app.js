@@ -619,12 +619,16 @@ function displaySolarResults(results) {
     container.innerHTML = `
         <h4>Solar Analysis Results</h4>
         <ul>
-            <li><strong>Total Energy:</strong> ${results.total_energy_kwh.toFixed(2)} kWh</li>
-            <li><strong>Average Power:</strong> ${results.average_power_w.toFixed(2)} W</li>
-            <li><strong>Peak Power:</strong> ${results.peak_power_w.toFixed(2)} W</li>
-            <li><strong>Capacity Factor:</strong> ${results.capacity_factor_percent.toFixed(1)}%</li>
-            <li><strong>Period:</strong> ${formatDateTime(results.period_start)} to ${formatDateTime(results.period_end)}</li>
-            <li><strong>Readings Analyzed:</strong> ${results.readings_count}</li>
+            <li><strong>Total Energy:</strong> ${results.total_kwh?.toFixed(2) || 'N/A'} kWh</li>
+            <li><strong>Daily Average:</strong> ${results.daily_avg_kwh?.toFixed(2) || 'N/A'} kWh/day</li>
+            <li><strong>Effective Efficiency:</strong> ${results.data?.effective_efficiency_pct?.toFixed(1) || 'N/A'}%</li>
+            <li><strong>Period:</strong> ${formatDateTime(results.start_date)} to ${formatDateTime(results.end_date)}</li>
+            <li><strong>Readings Analyzed:</strong> ${results.data?.num_readings || 'N/A'}</li>
+            <li><strong>Panel Area:</strong> ${results.config?.panel_area_m2 || 'N/A'} m²</li>
+            <li><strong>Panel Efficiency:</strong> ${results.config?.efficiency_percent || 'N/A'}%</li>
+            <li><strong>Annual Estimate:</strong> ${results.roi?.annual_kwh?.toFixed(1) || 'N/A'} kWh/year</li>
+            <li><strong>Annual Savings:</strong> $${results.roi?.annual_cost_savings?.toFixed(2) || 'N/A'}</li>
+            <li><strong>Payback Period:</strong> ${results.roi?.payback_years?.toFixed(1) || 'N/A'} years</li>
         </ul>
     `;
 
@@ -685,13 +689,19 @@ function displayWindResults(results) {
     container.innerHTML = `
         <h4>Wind Analysis Results</h4>
         <ul>
-            <li><strong>Total Energy:</strong> ${results.total_energy_kwh.toFixed(2)} kWh</li>
-            <li><strong>Average Power:</strong> ${results.average_power_w.toFixed(2)} W</li>
-            <li><strong>Peak Power:</strong> ${results.peak_power_w.toFixed(2)} W</li>
-            <li><strong>Capacity Factor:</strong> ${results.capacity_factor_percent.toFixed(1)}%</li>
-            <li><strong>Average Wind Speed:</strong> ${results.average_wind_speed_mph.toFixed(1)} mph</li>
-            <li><strong>Period:</strong> ${formatDateTime(results.period_start)} to ${formatDateTime(results.period_end)}</li>
-            <li><strong>Readings Analyzed:</strong> ${results.readings_count}</li>
+            <li><strong>Total Energy:</strong> ${results.total_kwh?.toFixed(2) || 'N/A'} kWh</li>
+            <li><strong>Daily Average:</strong> ${results.daily_avg_kwh?.toFixed(2) || 'N/A'} kWh/day</li>
+            <li><strong>Average Power:</strong> ${results.data?.avg_power_kw?.toFixed(2) || 'N/A'} kW</li>
+            <li><strong>Rated Power:</strong> ${results.data?.rated_power_kw?.toFixed(1) || 'N/A'} kW</li>
+            <li><strong>Capacity Factor:</strong> ${results.data?.capacity_factor_pct?.toFixed(1) || 'N/A'}%</li>
+            <li><strong>Operational Hours:</strong> ${results.data?.operational_hours?.toFixed(1) || 'N/A'} hours</li>
+            <li><strong>Period:</strong> ${formatDateTime(results.start_date)} to ${formatDateTime(results.end_date)}</li>
+            <li><strong>Readings Analyzed:</strong> ${results.data?.num_readings || 'N/A'}</li>
+            <li><strong>Rotor Diameter:</strong> ${results.config?.rotor_diameter_m || 'N/A'} m</li>
+            <li><strong>Turbine Efficiency:</strong> ${results.config?.efficiency_percent || 'N/A'}%</li>
+            <li><strong>Annual Estimate:</strong> ${results.roi?.annual_kwh?.toFixed(1) || 'N/A'} kWh/year</li>
+            <li><strong>Annual Savings:</strong> $${results.roi?.annual_cost_savings?.toFixed(2) || 'N/A'}</li>
+            <li><strong>Payback Period:</strong> ${results.roi?.payback_years?.toFixed(1) || 'N/A'} years</li>
         </ul>
     `;
 
