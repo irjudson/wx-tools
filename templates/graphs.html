@@ -50,13 +50,13 @@
             <div class="graphs-header">
                 <h2>Graphs & Analysis</h2>
                 <div class="date-range-controls">
-                    <button id="date-filter-toggle" class="btn btn-secondary">
+                    <button id="date-filter-toggle" class="btn btn-secondary" aria-expanded="false" aria-controls="date-filter-dropdown">
                         <span id="current-range-label">Past 7 Days</span>
                         <span>▼</span>
                     </button>
 
                     <!-- Date Range Dropdown (hidden by default) -->
-                    <div id="date-filter-dropdown" class="date-filter-dropdown" style="display: none;">
+                    <div id="date-filter-dropdown" class="date-filter-dropdown" role="dialog" aria-labelledby="date-filter-toggle" style="display: none;">
                         <div class="filter-content">
                             <!-- Left: Date Pickers -->
                             <div class="date-pickers">
@@ -95,13 +95,13 @@
             </div>
 
             <!-- Loading State -->
-            <div id="loading-state" class="loading-overlay" style="display: none;">
+            <div id="loading-state" class="loading-overlay" role="status" aria-live="polite" style="display: none;">
                 <div class="spinner"></div>
                 <p>Loading weather data...</p>
             </div>
 
             <!-- Error State -->
-            <div id="error-state" class="error-banner" style="display: none;">
+            <div id="error-state" class="error-banner" role="alert" aria-live="assertive" style="display: none;">
                 <p id="error-message">Failed to load weather data</p>
                 <button id="error-retry" class="btn btn-primary">Retry</button>
             </div>
