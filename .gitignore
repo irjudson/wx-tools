@@ -46,6 +46,11 @@ ENV/
 *.log
 logs/
 
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
 # OS
 .DS_Store
 Thumbs.db
