@@ -7,6 +7,7 @@ let temperatureChart = null;
 document.addEventListener('DOMContentLoaded', () => {
     initializeNavigation();
     loadDashboard();
+    startDashboardAutoRefresh(); // Auto-refresh every minute
     initializeImportForm();
     initializeAnalysisForms();
     loadSettings();
@@ -49,8 +50,34 @@ async function loadDashboard() {
     await Promise.all([
         loadLatestReading(),
         loadDatabaseStats(),
-        loadTemperatureChart()
+        loadAllCharts()
     ]);
+}
+
+// Auto-refresh dashboard every minute
+let dashboardRefreshInterval = null;
+
+function startDashboardAutoRefresh() {
+    // Clear any existing interval
+    if (dashboardRefreshInterval) {
+        clearInterval(dashboardRefreshInterval);
+    }
+
+    // Refresh every 60 seconds
+    dashboardRefreshInterval = setInterval(() => {
+        const dashboardSection = document.getElementById('dashboard');
+        if (dashboardSection && dashboardSection.classList.contains('active')) {
+            console.log('Auto-refreshing dashboard...');
+            loadDashboard();
+        }
+    }, 60000); // 60 seconds
+}
+
+function stopDashboardAutoRefresh() {
+    if (dashboardRefreshInterval) {
+        clearInterval(dashboardRefreshInterval);
+        dashboardRefreshInterval = null;
+    }
 }
 
 async function loadLatestReading() {
@@ -102,14 +129,22 @@ async function loadDatabaseStats() {
     }
 }
 
-async function loadTemperatureChart() {
+// Chart instances
+let charts = {
+    temperature: null,
+    humidity: null,
+    wind: null,
+    solar: null
+};
+
+async function loadAllCharts() {
     try {
         // Get last 24 hours of data
         const endDate = new Date();
         const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
 
         const response = await fetch(
-            `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=100`
+            `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=1000`
         );
 
         if (!response.ok) {
@@ -118,60 +153,135 @@ async function loadTemperatureChart() {
 
         const readings = await response.json();
 
-        // Prepare chart data
-        const labels = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
-        const temperatures = readings.map(r => r.tempf);
+        // Reverse to show oldest first
+        readings.reverse();
 
-        const ctx = document.getElementById('temperature-chart').getContext('2d');
+        // Prepare common chart data
+        const labels = readings.map(r => {
+            const date = new Date(r.timestamp);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        });
 
-        // Destroy existing chart if present
-        if (temperatureChart) {
-            temperatureChart.destroy();
-        }
+        // Temperature Chart
+        createOrUpdateChart('temperature', 'temperature-chart', {
+            label: 'Temperature (°F)',
+            data: readings.map(r => r.outdoor_temp_f),
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            yAxisLabel: 'Temperature (°F)'
+        }, labels);
 
-        temperatureChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Temperature (°F)',
-                    data: temperatures,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+        // Humidity Chart
+        createOrUpdateChart('humidity', 'humidity-chart', {
+            label: 'Humidity (%)',
+            data: readings.map(r => r.humidity_pct),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            yAxisLabel: 'Humidity (%)',
+            yMin: 0,
+            yMax: 100
+        }, labels);
+
+        // Wind Speed Chart
+        createOrUpdateChart('wind', 'wind-chart', {
+            label: 'Wind Speed (mph)',
+            data: readings.map(r => r.wind_speed_mph),
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            yAxisLabel: 'Wind Speed (mph)',
+            yMin: 0
+        }, labels);
+
+        // Solar Radiation Chart
+        createOrUpdateChart('solar', 'solar-chart', {
+            label: 'Solar Radiation (W/m²)',
+            data: readings.map(r => r.solar_radiation_wm2),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            yAxisLabel: 'Solar Radiation (W/m²)',
+            yMin: 0
+        }, labels);
+
+    } catch (error) {
+        console.error('Failed to load charts:', error);
+    }
+}
+
+function createOrUpdateChart(chartKey, canvasId, config, labels) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    // Destroy existing chart if present
+    if (charts[chartKey]) {
+        charts[chartKey].destroy();
+    }
+
+    charts[chartKey] = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: config.label,
+                data: config.data,
+                borderColor: config.borderColor,
+                backgroundColor: config.backgroundColor,
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                intersect: false,
+                mode: 'index'
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+            plugins: {
+                legend: {
+                    display: false
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        title: {
-                            display: true,
-                            text: 'Temperature (°F)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time'
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label;
                         }
                     }
                 }
+            },
+            scales: {
+                y: {
+                    beginAtZero: config.yMin !== undefined,
+                    min: config.yMin,
+                    max: config.yMax,
+                    title: {
+                        display: true,
+                        text: config.yAxisLabel
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: 12,
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
             }
-        });
-    } catch (error) {
-        console.error('Failed to load temperature chart:', error);
-    }
+        }
+    });
 }
 
 // Import Functions
