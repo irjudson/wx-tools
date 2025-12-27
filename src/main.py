@@ -5,16 +5,19 @@ from sqlalchemy.orm import Session
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List
+from contextlib import asynccontextmanager
 import tempfile
 import shutil
 import logging
 import secrets
 from src.config import get_settings
-from src.database import get_db
+from src.database import get_db, SessionLocal
 from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest
 from src.services.ingestion import store_weather_reading
 from src.services.csv_import import import_csv_data
 from src.services.query import get_latest_reading, get_readings, get_database_stats
+from src.services.config import get_mqtt_config
+from src.services.mqtt_publisher import MQTTPublisher, MQTTConfig
 from src.analysis.solar import SolarAnalyzer
 from src.analysis.wind import WindAnalyzer
 
@@ -23,13 +26,48 @@ settings = get_settings()
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
+# Global MQTT publisher instance
+mqtt_publisher: Optional[MQTTPublisher] = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan - startup and shutdown"""
+    global mqtt_publisher
+
+    # Startup: Initialize MQTT publisher
+    logger.info("Starting Weather Station Service v1.0.0")
+    try:
+        db = SessionLocal()
+        try:
+            mqtt_config_dict = get_mqtt_config(db)
+            mqtt_config = MQTTConfig(**mqtt_config_dict)
+
+            if mqtt_config.enabled:
+                logger.info("MQTT is enabled, initializing publisher")
+                mqtt_publisher = MQTTPublisher(mqtt_config)
+            else:
+                logger.info("MQTT is disabled")
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Failed to initialize MQTT publisher: {e}")
+        mqtt_publisher = None
+
+    yield
+
+    # Shutdown: Disconnect MQTT publisher
+    if mqtt_publisher:
+        logger.info("Shutting down MQTT publisher")
+        mqtt_publisher.disconnect()
+
+
 app = FastAPI(
     title="Weather Station Service",
     description="Local weather data archival and analysis service",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
-
-logger.info("Starting Weather Station Service v1.0.0")
 
 # Constants
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
@@ -123,8 +161,8 @@ async def upload_weather_data(
         battout=battout
     )
 
-    # Store reading in database
-    reading = store_weather_reading(db, upload)
+    # Store reading in database and publish to MQTT
+    reading = store_weather_reading(db, upload, mqtt_publisher)
 
     return {"status": "success", "timestamp": reading.timestamp}
 

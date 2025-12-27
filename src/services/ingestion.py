@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from src.models import WeatherReading
@@ -53,8 +54,17 @@ def normalize_station_data(upload: StationUpload) -> dict:
     }
 
 
-def store_weather_reading(db: Session, upload: StationUpload) -> WeatherReading:
-    """Store weather reading in database with duplicate prevention"""
+def store_weather_reading(db: Session, upload: StationUpload, mqtt_publisher=None) -> WeatherReading:
+    """Store weather reading in database with duplicate prevention
+
+    Args:
+        db: Database session
+        upload: Station upload data
+        mqtt_publisher: Optional MQTT publisher to publish reading
+
+    Returns:
+        WeatherReading instance
+    """
     normalized_data = normalize_station_data(upload)
 
     # Create new reading and attempt to insert
@@ -76,5 +86,45 @@ def store_weather_reading(db: Session, upload: StationUpload) -> WeatherReading:
         if not reading:
             # Should not happen, but raise if we can't find the existing record
             raise
+
+    # Publish to MQTT if publisher is provided
+    if mqtt_publisher is not None:
+        try:
+            # Convert reading to dict with all fields
+            reading_dict = {
+                "timestamp": reading.timestamp.isoformat(),
+                "outdoor_temp_f": reading.outdoor_temp_f,
+                "feels_like_f": reading.feels_like_f,
+                "dew_point_f": reading.dew_point_f,
+                "humidity_pct": reading.humidity_pct,
+                "wind_speed_mph": reading.wind_speed_mph,
+                "wind_gust_mph": reading.wind_gust_mph,
+                "max_daily_gust_mph": reading.max_daily_gust_mph,
+                "wind_direction_deg": reading.wind_direction_deg,
+                "rain_rate_in_hr": reading.rain_rate_in_hr,
+                "event_rain_in": reading.event_rain_in,
+                "daily_rain_in": reading.daily_rain_in,
+                "weekly_rain_in": reading.weekly_rain_in,
+                "monthly_rain_in": reading.monthly_rain_in,
+                "yearly_rain_in": reading.yearly_rain_in,
+                "total_rain_in": reading.total_rain_in,
+                "relative_pressure_inhg": reading.relative_pressure_inhg,
+                "absolute_pressure_inhg": reading.absolute_pressure_inhg,
+                "uv_index": reading.uv_index,
+                "solar_radiation_wm2": reading.solar_radiation_wm2,
+                "indoor_temp_f": reading.indoor_temp_f,
+                "indoor_humidity_pct": reading.indoor_humidity_pct,
+                "indoor_feels_like_f": reading.indoor_feels_like_f,
+                "indoor_dew_point_f": reading.indoor_dew_point_f,
+                "sensor1_temp_f": reading.sensor1_temp_f,
+                "sensor1_humidity_pct": reading.sensor1_humidity_pct,
+                "sensor1_feels_like_f": reading.sensor1_feels_like_f,
+                "sensor1_dew_point_f": reading.sensor1_dew_point_f,
+                "outdoor_battery": reading.outdoor_battery,
+                "sensor1_battery": reading.sensor1_battery,
+            }
+            mqtt_publisher.publish_reading(reading_dict)
+        except Exception as e:
+            logger.error(f"Failed to publish reading to MQTT: {e}")
 
     return reading
