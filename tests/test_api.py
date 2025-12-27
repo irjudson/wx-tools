@@ -9,7 +9,7 @@ def test_root_endpoint():
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Weather Station Service" in response.text
+    assert "Weather Station Dashboard" in response.text
 
 
 def test_health_endpoint():

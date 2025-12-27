@@ -272,6 +272,30 @@ flake8 src/ tests/
 mypy src/
 ```
 
+## Testing
+
+Run the full test suite:
+
+```bash
+pytest
+```
+
+Run specific test files:
+
+```bash
+pytest tests/test_models.py -v
+pytest tests/test_ingestion.py -v
+pytest tests/test_analysis_api.py -v
+```
+
+Run tests with coverage:
+
+```bash
+pytest --cov=src --cov-report=html
+```
+
+All tests use in-memory SQLite databases for isolation and speed.
+
 ## Configuration
 
 ### Environment Variables
