@@ -637,6 +637,12 @@ async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/graphs", response_class=HTMLResponse)
+async def graphs_page(request: Request):
+    """Serve graphs & analysis page"""
+    return templates.TemplateResponse("graphs.html", {"request": request})
+
+
 # Catch-all route MUST be last
 @app.get("/{catchall:path}")
 async def catch_weather_upload(catchall: str, request: Request, db: Session = Depends(get_db)):
