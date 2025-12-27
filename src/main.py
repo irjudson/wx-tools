@@ -12,11 +12,11 @@ import logging
 import secrets
 from src.config import get_settings
 from src.database import get_db, SessionLocal
-from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest
+from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest, MQTTConfigRequest, StationConfigRequest
 from src.services.ingestion import store_weather_reading
 from src.services.csv_import import import_csv_data
 from src.services.query import get_latest_reading, get_readings, get_database_stats
-from src.services.config import get_mqtt_config
+from src.services.config import get_mqtt_config, set_mqtt_config
 from src.services.mqtt_publisher import MQTTPublisher, MQTTConfig
 from src.analysis.solar import SolarAnalyzer
 from src.analysis.wind import WindAnalyzer
@@ -328,6 +328,49 @@ async def analyze_wind(
         return result.model_dump()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/config")
+async def get_configuration(db: Session = Depends(get_db)):
+    """Get all configuration settings"""
+    mqtt_config = get_mqtt_config(db)
+
+    return {
+        "mqtt": mqtt_config,
+        "station": {
+            "passkey_configured": bool(get_settings().station_passkey)
+        }
+    }
+
+
+@app.put("/api/config/mqtt")
+async def update_mqtt_config(
+    config: MQTTConfigRequest,
+    db: Session = Depends(get_db)
+):
+    """Update MQTT broker settings"""
+    global mqtt_publisher
+
+    # Save to database
+    set_mqtt_config(db, config.model_dump())
+
+    # Reinitialize MQTT publisher
+    mqtt_config = MQTTConfig(**config.model_dump())
+    if mqtt_publisher:
+        mqtt_publisher.disconnect()
+    mqtt_publisher = MQTTPublisher(mqtt_config)
+
+    return {"success": True}
+
+
+@app.put("/api/config/station")
+async def update_station_config(config: StationConfigRequest):
+    """Update station settings"""
+    # Note: This updates runtime config, not persisted .env
+    settings = get_settings()
+    settings.station_passkey = config.passkey
+
+    return {"success": True}
 
 
 @app.get("/", response_class=HTMLResponse)

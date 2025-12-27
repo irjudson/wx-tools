@@ -62,3 +62,16 @@ class AnalysisRequest(BaseModel):
     start: datetime
     end: datetime
     config: Dict[str, Any]
+
+
+class MQTTConfigRequest(BaseModel):
+    """Schema for MQTT configuration update requests"""
+    broker_url: str
+    username: Optional[str] = None
+    password: Optional[str] = None
+    enabled: bool
+
+
+class StationConfigRequest(BaseModel):
+    """Schema for station configuration update requests"""
+    passkey: str
