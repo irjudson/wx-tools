@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 
 class StationUpload(BaseModel):
@@ -55,3 +55,10 @@ class WeatherReadingResponse(BaseModel):
 class ImportPathRequest(BaseModel):
     """Schema for CSV import from file path"""
     path: str
+
+
+class AnalysisRequest(BaseModel):
+    """Schema for analysis API requests"""
+    start: datetime
+    end: datetime
+    config: Dict[str, Any]

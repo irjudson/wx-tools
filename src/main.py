@@ -11,10 +11,12 @@ import logging
 import secrets
 from src.config import get_settings
 from src.database import get_db
-from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse
+from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest
 from src.services.ingestion import store_weather_reading
 from src.services.csv_import import import_csv_data
 from src.services.query import get_latest_reading, get_readings, get_database_stats
+from src.analysis.solar import SolarAnalyzer
+from src.analysis.wind import WindAnalyzer
 
 # Configure logging
 settings = get_settings()
@@ -248,6 +250,46 @@ async def query_readings(
 async def database_stats(db: Session = Depends(get_db)):
     """Get database statistics"""
     return get_database_stats(db)
+
+
+@app.post("/api/analysis/solar")
+async def analyze_solar(
+    request: AnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    """Run solar energy analysis"""
+    analyzer = SolarAnalyzer()
+
+    try:
+        result = analyzer.analyze(
+            request.start,
+            request.end,
+            request.config,
+            db
+        )
+        return result.model_dump()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/analysis/wind")
+async def analyze_wind(
+    request: AnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    """Run wind energy analysis"""
+    analyzer = WindAnalyzer()
+
+    try:
+        result = analyzer.analyze(
+            request.start,
+            request.end,
+            request.config,
+            db
+        )
+        return result.model_dump()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/", response_class=HTMLResponse)
