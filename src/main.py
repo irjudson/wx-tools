@@ -20,6 +20,7 @@ from src.services.csv_import import import_csv_data
 from src.services.query import get_latest_reading, get_readings, get_database_stats
 from src.services.config import get_mqtt_config, set_mqtt_config
 from src.services.mqtt_publisher import MQTTPublisher, MQTTConfig
+from src.services.sampling import get_sampled_readings
 from src.analysis.solar import SolarAnalyzer
 from src.analysis.wind import WindAnalyzer
 
@@ -387,6 +388,39 @@ async def query_readings(
 
     readings = get_readings(db, start, end, limit, offset)
     return readings
+
+
+@app.get("/api/weather/readings/sampled")
+async def query_sampled_readings(
+    start: datetime,
+    end: datetime,
+    max_points: Optional[int] = 1500,
+    db: Session = Depends(get_db)
+):
+    """Query time-bucketed weather readings using TimescaleDB aggregation.
+
+    Returns intelligently sampled readings with ~1500-2000 points regardless of date range.
+    Uses TimescaleDB time_bucket() for efficient aggregation.
+
+    Args:
+        start: Start datetime (required)
+        end: End datetime (required)
+        max_points: Target maximum points (default: 1500)
+
+    Returns:
+        JSON with 'readings' array and 'metadata' object
+    """
+    try:
+        readings, metadata = get_sampled_readings(db, start, end, max_points)
+        return {
+            "readings": readings,
+            "metadata": metadata
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Sampled readings query failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve sampled readings")
 
 
 @app.get("/api/weather/stats")
