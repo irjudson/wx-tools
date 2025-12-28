@@ -227,8 +227,13 @@ function setupEventListeners() {
     });
 
     // Reset all zoom button
-    document.getElementById('reset-all-zoom').addEventListener('click', function() {
+    document.getElementById('reset-zoom-btn').addEventListener('click', function() {
         resetAllZoom();
+    });
+
+    // Error retry button
+    document.getElementById('error-retry').addEventListener('click', function() {
+        loadDataAndRenderCharts();
     });
 
     // Hash navigation for deep linking
@@ -346,23 +351,327 @@ function handleHashNavigation() {
     }
 }
 
-// Load data and render all charts (placeholder - will be implemented in Task 5)
-function loadDataAndRenderCharts() {
-    // Destroy existing charts before creating new ones
-    Object.values(charts).forEach(chart => {
-        if (chart && typeof chart.destroy === 'function') {
-            chart.destroy();
-        }
-    });
-    charts = {}; // Clear references
+// Load data and render all charts
+async function loadDataAndRenderCharts() {
+    showLoading();
+    hideError();
 
-    console.log('Loading data for range:', currentDateRange.start, 'to', currentDateRange.end);
-    // TODO: Fetch data from /api/data endpoint
-    // TODO: Render charts using Chart.js
+    try {
+        const response = await fetch(
+            `/api/weather/readings/sampled?start=${currentDateRange.start.toISOString()}&end=${currentDateRange.end.toISOString()}`
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to load data');
+        }
+
+        const data = await response.json();
+
+        if (!data.readings || data.readings.length === 0) {
+            showEmptyState();
+            return;
+        }
+
+        renderCharts(data.readings);
+        hideLoading();
+
+    } catch (error) {
+        console.error('Failed to load weather data:', error);
+        showError(error.message);
+    }
 }
 
-// Reset zoom on all charts (placeholder - will be implemented in Task 5)
+function showLoading() {
+    document.getElementById('loading-state').style.display = 'flex';
+    document.getElementById('charts-container').style.display = 'none';
+}
+
+function hideLoading() {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('charts-container').style.display = 'block';
+}
+
+function showError(message) {
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('error-state').style.display = 'flex';
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('charts-container').style.display = 'none';
+}
+
+function hideError() {
+    document.getElementById('error-state').style.display = 'none';
+}
+
+function showEmptyState() {
+    hideLoading();
+    const container = document.getElementById('charts-container');
+    container.innerHTML = `
+        <div class="empty-state">
+            <h3>No data available</h3>
+            <p>No weather readings found for this time period.</p>
+            <p>Try selecting a different date range.</p>
+        </div>
+    `;
+    container.style.display = 'block';
+}
+
+function renderCharts(readings) {
+    const container = document.getElementById('charts-container');
+    container.innerHTML = ''; // Clear existing
+
+    CHART_SECTIONS.forEach(section => {
+        const sectionEl = createChartSection(section, readings);
+        container.appendChild(sectionEl);
+    });
+}
+
+function createChartSection(config, readings) {
+    const section = document.createElement('div');
+    section.className = 'chart-section';
+    section.id = `section-${config.id}`;
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'chart-header';
+
+    // Title and stats
+    const titleStats = document.createElement('div');
+    const title = document.createElement('h3');
+    title.className = 'chart-title';
+    title.textContent = config.title;
+    titleStats.appendChild(title);
+
+    const stats = createStats(config.datasets, readings);
+    titleStats.appendChild(stats);
+
+    // Legend
+    const legend = createLegend(config.datasets);
+
+    header.appendChild(titleStats);
+    header.appendChild(legend);
+    section.appendChild(header);
+
+    // Canvas
+    const canvasWrapper = document.createElement('div');
+    canvasWrapper.className = 'chart-canvas-wrapper';
+    const canvas = document.createElement('canvas');
+    canvas.id = `chart-${config.id}`;
+    canvasWrapper.appendChild(canvas);
+    section.appendChild(canvasWrapper);
+
+    // Create chart
+    createChart(canvas, config, readings);
+
+    return section;
+}
+
+function createStats(datasets, readings) {
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'chart-stats';
+
+    datasets.forEach(dataset => {
+        const values = readings
+            .map(r => r[dataset.key])
+            .filter(v => v !== null && v !== undefined);
+
+        if (values.length === 0) return;
+
+        const current = values[values.length - 1];
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+        const statBadge = document.createElement('div');
+        statBadge.className = 'stat-badge';
+        statBadge.innerHTML = `
+            <span class="stat-label">${dataset.label}</span>
+            <span class="stat-value">${current.toFixed(1)}</span>
+            <span class="stat-label">Min: ${min.toFixed(1)} | Max: ${max.toFixed(1)} | Avg: ${avg.toFixed(1)}</span>
+        `;
+        statsDiv.appendChild(statBadge);
+    });
+
+    return statsDiv;
+}
+
+function createLegend(datasets) {
+    const legendDiv = document.createElement('div');
+    legendDiv.className = 'chart-legend';
+
+    datasets.forEach(dataset => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+
+        const colorBox = document.createElement('div');
+        colorBox.className = 'legend-color';
+        colorBox.style.backgroundColor = dataset.color;
+
+        const label = document.createElement('span');
+        label.textContent = dataset.label;
+
+        item.appendChild(colorBox);
+        item.appendChild(label);
+        legendDiv.appendChild(item);
+    });
+
+    return legendDiv;
+}
+
+function createChart(canvas, config, readings) {
+    const ctx = canvas.getContext('2d');
+
+    const chartData = {
+        labels: readings.map(r => new Date(r.timestamp)),
+        datasets: config.datasets.map(dataset => ({
+            label: dataset.label,
+            data: readings.map(r => r[dataset.key]),
+            borderColor: dataset.color,
+            backgroundColor: dataset.color + '20', // Add transparency
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            yAxisID: dataset.yAxisID || 'y'
+        }))
+    };
+
+    const scales = {
+        x: {
+            type: 'time',
+            time: {
+                displayFormats: {
+                    hour: 'MMM d, ha',
+                    day: 'MMM d',
+                    week: 'MMM d',
+                    month: 'MMM yyyy'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Time'
+            }
+        },
+        y: {
+            title: {
+                display: true,
+                text: config.yAxisLabel
+            },
+            beginAtZero: false
+        }
+    };
+
+    // Dual axis for solar chart
+    if (config.dualAxis) {
+        scales.y1 = {
+            position: 'right',
+            title: {
+                display: true,
+                text: 'UV Index'
+            },
+            beginAtZero: true,
+            grid: {
+                drawOnChartArea: false
+            }
+        };
+    }
+
+    charts[config.id] = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2.5,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 13 },
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            return new Date(tooltipItems[0].parsed.x).toLocaleString();
+                        }
+                    }
+                },
+                zoom: {
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            modifierKey: 'ctrl'
+                        },
+                        drag: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                        onZoomComplete: function({chart}) {
+                            handleZoomChange(chart);
+                        }
+                    },
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: 'shift',
+                        onPanComplete: function({chart}) {
+                            handleZoomChange(chart);
+                        }
+                    }
+                }
+            },
+            scales: scales
+        }
+    });
+}
+
+function handleZoomChange(sourceChart) {
+    // Get zoom range from source chart
+    const xScale = sourceChart.scales.x;
+    zoomState.min = xScale.min;
+    zoomState.max = xScale.max;
+
+    // Apply to all other charts (debounced)
+    clearTimeout(window.zoomSyncTimeout);
+    window.zoomSyncTimeout = setTimeout(() => {
+        syncZoomAcrossCharts(sourceChart);
+    }, 100);
+
+    // Show reset button
+    document.getElementById('reset-zoom-btn').style.display = 'block';
+
+    // Add zoomed indicator
+    document.querySelectorAll('.chart-section').forEach(section => {
+        section.classList.add('zoomed');
+    });
+}
+
+function syncZoomAcrossCharts(sourceChart) {
+    Object.values(charts).forEach(chart => {
+        if (chart !== sourceChart) {
+            chart.zoomScale('x', { min: zoomState.min, max: zoomState.max }, 'none');
+        }
+    });
+}
+
 function resetAllZoom() {
-    console.log('Resetting all zoom levels');
-    // TODO: Call resetZoom() on all Chart.js instances
+    zoomState.min = null;
+    zoomState.max = null;
+
+    Object.values(charts).forEach(chart => {
+        chart.resetZoom();
+    });
+
+    document.getElementById('reset-zoom-btn').style.display = 'none';
+
+    document.querySelectorAll('.chart-section').forEach(section => {
+        section.classList.remove('zoomed');
+    });
 }
