@@ -87,8 +87,6 @@ function stopDashboardAutoRefresh() {
 }
 
 async function loadLatestReading() {
-    const container = document.getElementById('latest-reading');
-
     try {
         const response = await fetch('/api/weather/latest');
 
@@ -97,18 +95,8 @@ async function loadLatestReading() {
         }
 
         const data = await response.json();
-
-        container.innerHTML = `
-            <p><strong>Time:</strong> ${formatDateTime(data.timestamp)}</p>
-            <p><strong>Temperature:</strong> ${data.outdoor_temp_f !== null ? data.outdoor_temp_f.toFixed(1) + '°F' : 'N/A'}</p>
-            <p><strong>Humidity:</strong> ${data.humidity_pct !== null ? data.humidity_pct + '%' : 'N/A'}</p>
-            <p><strong>Wind Speed:</strong> ${data.wind_speed_mph !== null ? data.wind_speed_mph.toFixed(1) + ' mph' : 'N/A'}</p>
-            <p><strong>Solar Radiation:</strong> ${data.solar_radiation_wm2 !== null ? data.solar_radiation_wm2.toFixed(1) + ' W/m²' : 'N/A'}</p>
-        `;
-
         return data; // Return data for hero card
     } catch (error) {
-        container.innerHTML = `<p class="error">No readings available</p>`;
         console.error('Failed to load latest reading:', error);
         return null;
     }
