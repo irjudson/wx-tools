@@ -705,6 +705,38 @@ function displayWindResults(results) {
 
 // Settings Functions
 async function loadSettings() {
+    // Populate timezone dropdown
+    const timezoneSelect = document.getElementById('timezone-select');
+
+    if (timezoneSelect) {
+        try {
+            // Get all supported timezones
+            const timezones = Intl.supportedValuesOf('timeZone');
+
+            // Clear loading option
+            timezoneSelect.innerHTML = '';
+
+            // Add options
+            timezones.forEach(tz => {
+                const option = document.createElement('option');
+                option.value = tz;
+                option.textContent = tz;
+                timezoneSelect.appendChild(option);
+            });
+
+            // Set current timezone
+            timezoneSelect.value = userTimezone;
+
+            // Handle changes
+            timezoneSelect.addEventListener('change', async (e) => {
+                await saveTimezone(e.target.value);
+            });
+        } catch (error) {
+            console.error('Failed to load timezones:', error);
+            timezoneSelect.innerHTML = '<option>Error loading timezones</option>';
+        }
+    }
+
     try {
         const response = await fetch('/api/config');
 
@@ -729,6 +761,35 @@ async function loadSettings() {
 
     // Save settings handler
     document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+}
+
+async function saveTimezone(timezone) {
+    try {
+        const response = await fetch('/api/settings/timezone', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({timezone})
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save timezone');
+        }
+
+        const data = await response.json();
+        userTimezone = data.timezone;
+
+        console.log(`Timezone updated to: ${userTimezone}`);
+
+        // Reload dashboard to apply new timezone
+        const dashboardSection = document.getElementById('dashboard');
+        if (dashboardSection && dashboardSection.classList.contains('active')) {
+            loadDashboard();
+        }
+    } catch (error) {
+        console.error('Failed to save timezone:', error);
+        alert(`Failed to save timezone: ${error.message}`);
+    }
 }
 
 async function saveSettings() {
