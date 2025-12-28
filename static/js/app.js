@@ -1648,6 +1648,14 @@ async function updateSparklines() {
         // Humidity sparkline
         drawSparkline('humidity-sparkline', readings.map(r => r.humidity_pct), '#3b82f6');
 
+        // Solar & UV dual sparkline
+        drawDualSparkline('solar-uv-sparkline',
+            readings.map(r => r.solar_radiation_wm2),
+            readings.map(r => r.uv_index),
+            '#f59e0b',
+            '#eab308'
+        );
+
     } catch (error) {
         console.error('Failed to render sparklines:', error);
     }
@@ -1700,6 +1708,73 @@ function drawSparkline(canvasId, data, color) {
     ctx.closePath();
     ctx.fillStyle = color.replace(')', ', 0.1)').replace('rgb', 'rgba');
     ctx.fill();
+}
+
+// Draw dual-line sparkline (for solar & UV)
+function drawDualSparkline(canvasId, data1, data2, color1, color2) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !data1 || !data2 || data1.length === 0 || data2.length === 0) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.offsetWidth || canvas.width;
+    const height = canvas.height;
+
+    canvas.width = width;
+
+    // Filter out null values for each dataset
+    const validData1 = data1.filter(d => d !== null);
+    const validData2 = data2.filter(d => d !== null);
+
+    if (validData1.length === 0 && validData2.length === 0) return;
+
+    // Normalize each dataset to 0-1 range independently
+    const min1 = validData1.length > 0 ? Math.min(...validData1) : 0;
+    const max1 = validData1.length > 0 ? Math.max(...validData1) : 1;
+    const range1 = max1 - min1 || 1;
+
+    const min2 = validData2.length > 0 ? Math.min(...validData2) : 0;
+    const max2 = validData2.length > 0 ? Math.max(...validData2) : 1;
+    const range2 = max2 - min2 || 1;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Helper to draw one dataset
+    const drawDataset = (data, min, range, color, fillAlpha = 0.1) => {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+
+        let firstPoint = true;
+        data.forEach((value, i) => {
+            if (value === null) return;
+
+            const x = (i / (data.length - 1)) * width;
+            const y = height - ((value - min) / range) * (height - 10) - 5;
+
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+
+        // Fill area
+        if (!firstPoint) {
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fillStyle = color.replace(')', `, ${fillAlpha})`).replace('rgb', 'rgba');
+            ctx.fill();
+        }
+    };
+
+    // Draw both datasets
+    drawDataset(data1, min1, range1, color1, 0.15);
+    drawDataset(data2, min2, range2, color2, 0.15);
 }
 
 // Update rainfall bars
