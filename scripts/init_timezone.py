@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Initialize default timezone setting in the database"""
 
+from pathlib import Path
 import sys
+
+# Add parent directory to path for robust imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from sqlalchemy.exc import SQLAlchemyError
 from src.database import SessionLocal
-from src.services.config import set_timezone
+from src.services.config import get_timezone, set_timezone
 
 def init_timezone():
     """Initialize the default timezone setting to UTC"""
@@ -14,9 +19,15 @@ def init_timezone():
         # Create database session
         db = SessionLocal()
         try:
-            # Set default timezone to UTC
-            set_timezone(db, "UTC")
-            print("Successfully set default timezone to UTC")
+            # Check if timezone is already configured
+            existing = get_timezone(db)
+            if existing != "UTC":
+                # Already configured to non-default value
+                print(f"Timezone already configured: {existing}")
+            else:
+                # Set default timezone to UTC
+                set_timezone(db, "UTC")
+                print("Initialized default timezone: UTC")
         finally:
             db.close()
 
