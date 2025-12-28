@@ -14,7 +14,7 @@ import secrets
 from urllib.parse import unquote, parse_qs
 from src.config import get_settings
 from src.database import get_db, SessionLocal
-from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest, MQTTConfigRequest, StationConfigRequest
+from src.schemas import StationUpload, ImportPathRequest, WeatherReadingResponse, AnalysisRequest, MQTTConfigRequest, StationConfigRequest, TimezoneUpdateRequest
 from src.services.ingestion import store_weather_reading
 from src.services.csv_import import import_csv_data
 from src.services.query import get_latest_reading, get_readings, get_database_stats
@@ -591,14 +591,42 @@ async def analyze_wind(
 @app.get("/api/config")
 async def get_configuration(db: Session = Depends(get_db)):
     """Get all configuration settings"""
+    from src.services.config import get_timezone
+
     mqtt_config = get_mqtt_config(db)
 
     return {
         "mqtt": mqtt_config,
         "station": {
             "passkey_configured": bool(get_settings().station_passkey)
-        }
+        },
+        "timezone": get_timezone(db)
     }
+
+
+@app.get("/api/settings")
+async def get_settings_endpoint(db: Session = Depends(get_db)):
+    """Get user settings including timezone"""
+    from src.services.config import get_timezone
+
+    return {
+        "timezone": get_timezone(db)
+    }
+
+
+@app.put("/api/settings/timezone")
+async def update_timezone(
+    request: TimezoneUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    """Update timezone setting with validation"""
+    from src.services.config import set_timezone
+
+    try:
+        set_timezone(db, request.timezone)
+        return {"success": True, "timezone": request.timezone}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.put("/api/config/mqtt")
