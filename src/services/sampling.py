@@ -1,7 +1,7 @@
 """Sampling utilities for time-series data with TimescaleDB time_bucket aggregation"""
 
 from datetime import datetime, timedelta
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -98,31 +98,27 @@ def get_sampled_readings(
     db: Session,
     start: datetime,
     end: datetime,
-    max_points: Optional[int] = 1500
-) -> Tuple[List[Dict], Dict]:
-    """Get time-bucketed weather readings using TimescaleDB aggregation.
+    max_points: int = 1500
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Get weather readings sampled using TimescaleDB time_bucket.
 
-    Args:
-        db: Database session
-        start: Start datetime
-        end: End datetime
-        max_points: Target maximum number of points (currently informational)
-
-    Returns:
-        Tuple of (readings_list, metadata_dict)
+    Returns tuple of (readings list, metadata dict)
 
     Raises:
-        ValueError: If date range exceeds 2 years or start > end
+        ValueError: If date range is invalid or too large
     """
-    # Validate date range
-    if start > end:
+    # Validate inputs
+    if start >= end:
         raise ValueError("Start date must be before end date")
 
-    duration = end - start
-    if duration.days > 730:  # 2 years
-        raise ValueError("Date range cannot exceed 2 years")
+    if (end - start).days > 730:
+        raise ValueError("Date range too large, maximum 2 years")
 
-    # Calculate appropriate bucket size
+    # Check for future dates
+    if end > datetime.now():
+        raise ValueError("End date cannot be in the future")
+
     bucket_size = calculate_bucket_size(start, end)
 
     # Validate bucket size against whitelist for SQL injection prevention

@@ -362,8 +362,16 @@ async function loadDataAndRenderCharts() {
         );
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to load data');
+            let errorMessage = 'Failed to load weather data';
+
+            if (response.status === 400) {
+                const error = await response.json();
+                errorMessage = error.detail || 'Invalid date range';
+            } else if (response.status === 500) {
+                errorMessage = 'Server error. Please try again later.';
+            }
+
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
