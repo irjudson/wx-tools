@@ -417,6 +417,14 @@ function showEmptyState() {
 }
 
 function renderCharts(readings) {
+    // Destroy existing Chart.js instances to prevent memory leaks
+    Object.values(charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+            chart.destroy();
+        }
+    });
+    charts = {}; // Clear references
+
     const container = document.getElementById('charts-container');
     container.innerHTML = ''; // Clear existing
 
