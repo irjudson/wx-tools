@@ -5,7 +5,7 @@
 let currentDateRange = {
     start: null,
     end: null,
-    preset: 'past-7-days'
+    preset: '7d'
 };
 
 let charts = {}; // Will store Chart.js instances
@@ -15,65 +15,77 @@ let zoomState = {}; // Track zoom state per chart
 const CHART_SECTIONS = [
     {
         id: 'outdoor',
-        title: 'Outdoor Temperature & Humidity',
-        charts: [
-            { id: 'outdoor-temp', type: 'line', yAxis: 'Temperature (°F)', metrics: ['outdoor_temp'] },
-            { id: 'outdoor-humidity', type: 'line', yAxis: 'Humidity (%)', metrics: ['outdoor_humidity'] }
-        ]
+        title: 'Outdoor Temperature',
+        datasets: [
+            { key: 'outdoor_temp_f', label: 'Temperature', color: '#3b82f6' },
+            { key: 'dew_point_f', label: 'Dew Point', color: '#10b981' },
+            { key: 'feels_like_f', label: 'Feels Like', color: '#f97316' }
+        ],
+        yAxisLabel: 'Temperature (°F)'
     },
     {
         id: 'indoor',
-        title: 'Indoor Temperature & Humidity',
-        charts: [
-            { id: 'indoor-temp', type: 'line', yAxis: 'Temperature (°F)', metrics: ['indoor_temp'] },
-            { id: 'indoor-humidity', type: 'line', yAxis: 'Humidity (%)', metrics: ['indoor_humidity'] }
-        ]
+        title: 'Indoor Temperature',
+        datasets: [
+            { key: 'indoor_temp_f', label: 'Temperature', color: '#3b82f6' },
+            { key: 'indoor_dew_point_f', label: 'Dew Point', color: '#10b981' },
+            { key: 'indoor_feels_like_f', label: 'Feels Like', color: '#f97316' }
+        ],
+        yAxisLabel: 'Temperature (°F)'
     },
     {
-        id: 'wind',
-        title: 'Wind Speed & Direction',
-        charts: [
-            { id: 'wind-speed', type: 'line', yAxis: 'Speed (mph)', metrics: ['wind_speed', 'wind_gust'] },
-            { id: 'wind-direction', type: 'scatter', yAxis: 'Direction (°)', metrics: ['wind_direction'] }
-        ]
+        id: 'wind-speed',
+        title: 'Wind Speed',
+        datasets: [
+            { key: 'wind_speed_mph', label: 'Wind Speed', color: '#3b82f6' },
+            { key: 'wind_gust_mph', label: 'Wind Gust', color: '#ef4444' }
+        ],
+        yAxisLabel: 'Speed (mph)'
     },
     {
-        id: 'rain',
-        title: 'Rainfall',
-        charts: [
-            { id: 'rain-rate', type: 'line', yAxis: 'Rate (in/hr)', metrics: ['rain_rate'] },
-            { id: 'rain-daily', type: 'bar', yAxis: 'Daily Total (in)', metrics: ['rain_daily'] }
-        ]
+        id: 'wind-direction',
+        title: 'Wind Direction',
+        datasets: [
+            { key: 'wind_direction_deg', label: 'Direction', color: '#a855f7' }
+        ],
+        yAxisLabel: 'Direction (degrees)'
     },
     {
         id: 'pressure',
         title: 'Barometric Pressure',
-        charts: [
-            { id: 'pressure-abs', type: 'line', yAxis: 'Pressure (inHg)', metrics: ['pressure_abs'] },
-            { id: 'pressure-rel', type: 'line', yAxis: 'Pressure (inHg)', metrics: ['pressure_rel'] }
-        ]
+        datasets: [
+            { key: 'relative_pressure_inhg', label: 'Pressure', color: '#3b82f6' }
+        ],
+        yAxisLabel: 'Pressure (inHg)'
+    },
+    {
+        id: 'humidity',
+        title: 'Humidity',
+        datasets: [
+            { key: 'humidity_pct', label: 'Outdoor', color: '#3b82f6' },
+            { key: 'indoor_humidity_pct', label: 'Indoor', color: '#10b981' }
+        ],
+        yAxisLabel: 'Humidity (%)'
+    },
+    {
+        id: 'rainfall',
+        title: 'Rainfall',
+        datasets: [
+            { key: 'rain_rate_in_hr', label: 'Rate (in/hr)', color: '#3b82f6' },
+            { key: 'daily_rain_in', label: 'Daily Total', color: '#10b981' },
+            { key: 'event_rain_in', label: 'Event Total', color: '#f97316' }
+        ],
+        yAxisLabel: 'Rainfall (inches)'
     },
     {
         id: 'solar',
-        title: 'Solar Radiation & UV',
-        charts: [
-            { id: 'solar-radiation', type: 'line', yAxis: 'W/m²', metrics: ['solar_radiation'] },
-            { id: 'uv-index', type: 'line', yAxis: 'UV Index', metrics: ['uv'] }
-        ]
-    },
-    {
-        id: 'soil',
-        title: 'Soil Moisture',
-        charts: [
-            { id: 'soil-moisture', type: 'line', yAxis: 'Moisture (%)', metrics: ['soil_moisture'] }
-        ]
-    },
-    {
-        id: 'battery',
-        title: 'Battery Status',
-        charts: [
-            { id: 'battery', type: 'line', yAxis: 'Battery', metrics: ['battery'] }
-        ]
+        title: 'Solar & UV',
+        datasets: [
+            { key: 'solar_radiation_wm2', label: 'Solar Radiation', color: '#f97316', yAxisID: 'y' },
+            { key: 'uv_index', label: 'UV Index', color: '#a855f7', yAxisID: 'y1' }
+        ],
+        yAxisLabel: 'Solar (W/m²)',
+        dualAxis: true
     }
 ];
 
@@ -109,7 +121,7 @@ function initializeDateRange() {
         updateRangeLabel();
     } else {
         // Default to past 7 days
-        applyPreset('past-7-days');
+        applyPreset('7d');
     }
 }
 
@@ -191,44 +203,49 @@ function setupEventListeners() {
     window.addEventListener('hashchange', handleHashNavigation);
 }
 
-// Apply a preset date range
 function applyPreset(preset) {
-    const now = new Date();
-    let start, end;
+    const end = new Date();
+    const start = new Date();
 
     switch(preset) {
-        case 'past-24-hours':
-            start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            end = now;
+        case '24h':
+            start.setHours(start.getHours() - 24);
+            updateRangeLabel('Last 24 Hours');
             break;
-        case 'past-7-days':
-            start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            end = now;
+        case '7d':
+            start.setDate(start.getDate() - 7);
+            updateRangeLabel('Past 7 Days');
             break;
-        case 'past-30-days':
-            start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            end = now;
+        case '30d':
+            start.setDate(start.getDate() - 30);
+            updateRangeLabel('Past 30 Days');
             break;
-        case 'past-year':
-            start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-            end = now;
+        case '90d':
+            start.setDate(start.getDate() - 90);
+            updateRangeLabel('Past 90 Days');
             break;
-        default:
-            return;
+        case '1y':
+            start.setFullYear(start.getFullYear() - 1);
+            updateRangeLabel('Past Year');
+            break;
+        case 'ytd':
+            start.setMonth(0, 1);
+            start.setHours(0, 0, 0, 0);
+            updateRangeLabel('Year to Date');
+            break;
     }
 
     currentDateRange.start = start;
     currentDateRange.end = end;
     currentDateRange.preset = preset;
 
-    // Update custom range inputs to match preset
     document.getElementById('start-date').value = formatDateTimeLocal(start);
     document.getElementById('end-date').value = formatDateTimeLocal(end);
 
     updatePresetButtons(preset);
-    updateRangeLabel();
     updateURL();
     loadDataAndRenderCharts();
+    document.getElementById('date-filter-dropdown').style.display = 'none';
 }
 
 // Update preset button active states
@@ -243,20 +260,25 @@ function updatePresetButtons(activePreset) {
 }
 
 // Update the date range label in the toggle button
-function updateRangeLabel() {
+function updateRangeLabel(labelText) {
     const label = document.getElementById('current-range-label');
 
-    if (currentDateRange.preset === 'custom') {
+    if (labelText) {
+        // Use provided label text (from applyPreset)
+        label.textContent = labelText;
+    } else if (currentDateRange.preset === 'custom') {
         const startStr = currentDateRange.start.toLocaleDateString();
         const endStr = currentDateRange.end.toLocaleDateString();
         label.textContent = `${startStr} - ${endStr}`;
     } else {
         // Use preset label
         const presetLabels = {
-            'past-24-hours': 'Past 24 Hours',
-            'past-7-days': 'Past 7 Days',
-            'past-30-days': 'Past 30 Days',
-            'past-year': 'Past Year'
+            '24h': 'Last 24 Hours',
+            '7d': 'Past 7 Days',
+            '30d': 'Past 30 Days',
+            '90d': 'Past 90 Days',
+            '1y': 'Past Year',
+            'ytd': 'Year to Date'
         };
         label.textContent = presetLabels[currentDateRange.preset] || 'Select Range';
     }
