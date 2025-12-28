@@ -107,3 +107,8 @@ class MQTTConfigRequest(BaseModel):
 class StationConfigRequest(BaseModel):
     """Schema for station configuration update requests"""
     passkey: str
+
+
+class TimezoneUpdateRequest(BaseModel):
+    """Schema for timezone update requests"""
+    timezone: str
