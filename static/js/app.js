@@ -727,10 +727,13 @@ async function loadSettings() {
             // Set current timezone
             timezoneSelect.value = userTimezone;
 
-            // Handle changes
-            timezoneSelect.addEventListener('change', async (e) => {
-                await saveTimezone(e.target.value);
-            });
+            // Handle changes (only add listener if not already added)
+            if (!timezoneSelect.dataset.listenerAdded) {
+                timezoneSelect.addEventListener('change', async (e) => {
+                    await saveTimezone(e.target.value);
+                });
+                timezoneSelect.dataset.listenerAdded = 'true';
+            }
         } catch (error) {
             console.error('Failed to load timezones:', error);
             timezoneSelect.innerHTML = '<option>Error loading timezones</option>';
@@ -780,6 +783,9 @@ async function saveTimezone(timezone) {
         userTimezone = data.timezone;
 
         console.log(`Timezone updated to: ${userTimezone}`);
+
+        // Show success message
+        alert('Timezone updated successfully');
 
         // Reload dashboard to apply new timezone
         const dashboardSection = document.getElementById('dashboard');
