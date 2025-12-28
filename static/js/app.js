@@ -53,6 +53,7 @@ async function loadDashboard() {
     const latest = await loadLatestReading();
     if (latest) {
         updateHeroCard(latest);
+        updateWeatherCards(latest);
     }
     await Promise.all([
         loadDatabaseStats(),
@@ -1242,5 +1243,143 @@ function updateHeroCard(data) {
     if (heroLastUpdated) {
         heroLastUpdated.textContent = data.timestamp ?
             formatRelativeTime(data.timestamp) : '--';
+    }
+}
+
+// Update all weather cards with latest data
+function updateWeatherCards(data) {
+    // Outdoor Card
+    const outdoorTemp = document.getElementById('outdoor-temp-display');
+    if (outdoorTemp) {
+        outdoorTemp.textContent = data.outdoor_temp_f !== null ?
+            Math.round(data.outdoor_temp_f) : '--';
+    }
+
+    const outdoorDew = document.getElementById('outdoor-dew');
+    if (outdoorDew) {
+        outdoorDew.textContent = data.dew_point_f !== null ?
+            `${Math.round(data.dew_point_f)}°F` : '--°F';
+    }
+
+    const outdoorFeels = document.getElementById('outdoor-feels');
+    if (outdoorFeels) {
+        outdoorFeels.textContent = data.feels_like_f !== null ?
+            `${Math.round(data.feels_like_f)}°F` : '--°F';
+    }
+
+    // Indoor Card
+    const indoorTemp = document.getElementById('indoor-temp-display');
+    if (indoorTemp) {
+        indoorTemp.textContent = data.indoor_temp_f !== null ?
+            Math.round(data.indoor_temp_f) : '--';
+    }
+
+    const indoorHumidity = document.getElementById('indoor-humidity-display');
+    if (indoorHumidity) {
+        indoorHumidity.textContent = data.indoor_humidity_pct !== null ?
+            data.indoor_humidity_pct : '--';
+    }
+
+    const indoorDew = document.getElementById('indoor-dew');
+    if (indoorDew) {
+        indoorDew.textContent = data.indoor_dew_point_f !== null ?
+            `${Math.round(data.indoor_dew_point_f)}°F` : '--°F';
+    }
+
+    const indoorFeels = document.getElementById('indoor-feels');
+    if (indoorFeels) {
+        indoorFeels.textContent = data.indoor_feels_like_f !== null ?
+            `${Math.round(data.indoor_feels_like_f)}°F` : '--°F';
+    }
+
+    // Wind Card
+    const windDirection = document.getElementById('wind-direction');
+    if (windDirection) {
+        if (data.wind_direction_deg !== null) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                              'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            const index = Math.round(data.wind_direction_deg / 22.5) % 16;
+            windDirection.textContent = `${directions[index]} (${data.wind_direction_deg}°)`;
+        } else {
+            windDirection.textContent = '--';
+        }
+    }
+
+    const windGust = document.getElementById('wind-gust-value');
+    if (windGust) {
+        windGust.textContent = data.wind_gust_mph !== null ?
+            `${data.wind_gust_mph.toFixed(1)} mph` : '-- mph';
+    }
+
+    // Rainfall Card
+    const rainRate = document.getElementById('rain-rate');
+    if (rainRate) {
+        rainRate.textContent = data.rain_rate_in_hr !== null ?
+            `${data.rain_rate_in_hr.toFixed(2)} in/hr` : '-- in/hr';
+    }
+
+    const rainToday = document.getElementById('rain-today');
+    if (rainToday) {
+        rainToday.textContent = data.daily_rain_in !== null ?
+            `${data.daily_rain_in.toFixed(2)} in` : '-- in';
+    }
+
+    const rainEvent = document.getElementById('rain-event');
+    if (rainEvent) {
+        rainEvent.textContent = data.event_rain_in !== null ?
+            `${data.event_rain_in.toFixed(2)} in` : '-- in';
+    }
+
+    // Pressure Card
+    const pressureDisplay = document.getElementById('pressure-display');
+    if (pressureDisplay) {
+        pressureDisplay.textContent = data.relative_pressure_inhg !== null ?
+            data.relative_pressure_inhg.toFixed(2) : '--';
+    }
+
+    // Humidity Card
+    const humidityDisplay = document.getElementById('humidity-display');
+    if (humidityDisplay) {
+        humidityDisplay.textContent = data.humidity_pct !== null ?
+            data.humidity_pct : '--';
+    }
+
+    const humidityOutdoor = document.getElementById('humidity-outdoor-label');
+    if (humidityOutdoor) {
+        humidityOutdoor.textContent = data.humidity_pct !== null ?
+            `${data.humidity_pct}%` : '--%';
+    }
+
+    const humidityIndoor = document.getElementById('humidity-indoor-label');
+    if (humidityIndoor) {
+        humidityIndoor.textContent = data.indoor_humidity_pct !== null ?
+            `${data.indoor_humidity_pct}%` : '--%';
+    }
+
+    // Solar & UV Card
+    const solarDisplay = document.getElementById('solar-display');
+    if (solarDisplay) {
+        solarDisplay.textContent = data.solar_radiation_wm2 !== null ?
+            Math.round(data.solar_radiation_wm2) : '--';
+    }
+
+    const uvDisplay = document.getElementById('uv-display');
+    if (uvDisplay) {
+        uvDisplay.textContent = data.uv_index !== null ?
+            data.uv_index.toFixed(1) : '--';
+    }
+
+    const uvLevelDesc = document.getElementById('uv-level-desc');
+    if (uvLevelDesc && data.uv_index !== null) {
+        const uv = data.uv_index;
+        let level = '';
+        if (uv < 3) level = 'Low';
+        else if (uv < 6) level = 'Moderate';
+        else if (uv < 8) level = 'High';
+        else if (uv < 11) level = 'Very High';
+        else level = 'Extreme';
+        uvLevelDesc.textContent = level;
+    } else if (uvLevelDesc) {
+        uvLevelDesc.textContent = '--';
     }
 }
