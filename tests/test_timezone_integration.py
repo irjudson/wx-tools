@@ -72,14 +72,11 @@ def test_update_timezone_workflow(client):
     assert update_data["success"] is True
     assert update_data["timezone"] == "America/Chicago"
 
-    # 3. Verify update succeeded
-    assert update_data["success"] is True
-
-    # 4. Get timezone again
+    # 3. Get timezone again
     get_response = client.get("/api/settings")
     assert get_response.status_code == 200
 
-    # 5. Verify persistence
+    # 4. Verify persistence
     assert get_response.json()["timezone"] == "America/Chicago"
 
 
