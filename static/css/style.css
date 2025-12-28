@@ -57,6 +57,27 @@ body {
     font-weight: 700;
 }
 
+/* Station Statistics in Sidebar */
+.sidebar .stats-card {
+    margin: 1rem 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+.sidebar .stats-card h3 {
+    font-size: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.sidebar .stats-card .stat-content {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
 .nav-menu {
     display: flex;
     flex-direction: column;
