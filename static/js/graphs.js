@@ -109,8 +109,24 @@ function initializeDateRange() {
 
     if (startParam && endParam) {
         // Use URL parameters
-        currentDateRange.start = new Date(startParam);
-        currentDateRange.end = new Date(endParam);
+        const start = new Date(startParam);
+        const end = new Date(endParam);
+
+        // Validate dates are valid and in reasonable range
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            console.warn('Invalid date parameters, using default');
+            applyPreset('7d');
+            return;
+        }
+
+        if (start >= end) {
+            console.warn('Start date must be before end date');
+            applyPreset('7d');
+            return;
+        }
+
+        currentDateRange.start = start;
+        currentDateRange.end = end;
         currentDateRange.preset = 'custom';
 
         // Update UI inputs
@@ -135,6 +151,22 @@ function formatDateTimeLocal(date) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+// Show validation error in dropdown
+function showValidationError(message) {
+    const dropdown = document.getElementById('date-filter-dropdown');
+    // Remove any existing error
+    const existingError = dropdown.querySelector('.validation-error');
+    if (existingError) existingError.remove();
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'validation-error';
+    errorDiv.textContent = message;
+    errorDiv.setAttribute('role', 'alert');
+    errorDiv.style.cssText = 'color: #dc2626; background: #fef2f2; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.875rem;';
+    dropdown.insertBefore(errorDiv, dropdown.firstChild);
+    setTimeout(() => errorDiv.remove(), 3000);
+}
+
 // Setup all event listeners
 function setupEventListeners() {
     // Date filter toggle
@@ -148,7 +180,7 @@ function setupEventListeners() {
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
-        if (!event.target.closest('.date-filter')) {
+        if (!event.target.closest('.date-range-controls')) {
             dropdown.classList.remove('show');
             toggleBtn.setAttribute('aria-expanded', 'false');
         }
@@ -168,7 +200,7 @@ function setupEventListeners() {
         const endInput = document.getElementById('end-date').value;
 
         if (!startInput || !endInput) {
-            alert('Please select both start and end dates.');
+            showValidationError('Please select both start and end dates');
             return;
         }
 
@@ -176,7 +208,7 @@ function setupEventListeners() {
         const end = new Date(endInput);
 
         if (start >= end) {
-            alert('Start date must be before end date.');
+            showValidationError('Start date must be before end date');
             return;
         }
 
@@ -316,6 +348,14 @@ function handleHashNavigation() {
 
 // Load data and render all charts (placeholder - will be implemented in Task 5)
 function loadDataAndRenderCharts() {
+    // Destroy existing charts before creating new ones
+    Object.values(charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+            chart.destroy();
+        }
+    });
+    charts = {}; // Clear references
+
     console.log('Loading data for range:', currentDateRange.start, 'to', currentDateRange.end);
     // TODO: Fetch data from /api/data endpoint
     // TODO: Render charts using Chart.js
