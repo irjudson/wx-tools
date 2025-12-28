@@ -1,6 +1,6 @@
 """Sampling utilities for time-series data with TimescaleDB time_bucket aggregation"""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -116,7 +116,7 @@ def get_sampled_readings(
         raise ValueError("Date range too large, maximum 2 years")
 
     # Check for future dates
-    if end > datetime.now():
+    if end > datetime.now(timezone.utc):
         raise ValueError("End date cannot be in the future")
 
     bucket_size = calculate_bucket_size(start, end)
