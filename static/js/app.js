@@ -2,10 +2,12 @@
 
 // Global state
 let temperatureChart = null;
+let userTimezone = 'UTC'; // Loaded from backend on init
 
 // Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initializeNavigation();
+    await loadUserSettings(); // Load timezone before dashboard
     loadDashboard();
     startDashboardAutoRefresh(); // Auto-refresh every minute
     initializeImportForm();
@@ -48,8 +50,11 @@ function initializeNavigation() {
 
 // Dashboard Functions
 async function loadDashboard() {
+    const latest = await loadLatestReading();
+    if (latest) {
+        updateHeroCard(latest);
+    }
     await Promise.all([
-        loadLatestReading(),
         loadDatabaseStats(),
         loadAllCharts()
     ]);
@@ -100,9 +105,12 @@ async function loadLatestReading() {
             <p><strong>Wind Speed:</strong> ${data.wind_speed_mph !== null ? data.wind_speed_mph.toFixed(1) + ' mph' : 'N/A'}</p>
             <p><strong>Solar Radiation:</strong> ${data.solar_radiation_wm2 !== null ? data.solar_radiation_wm2.toFixed(1) + ' W/m²' : 'N/A'}</p>
         `;
+
+        return data; // Return data for hero card
     } catch (error) {
         container.innerHTML = `<p class="error">No readings available</p>`;
         console.error('Failed to load latest reading:', error);
+        return null;
     }
 }
 
@@ -1005,7 +1013,171 @@ function showStatus(elementId, message, type) {
     element.className = `status-message ${type}`;
 }
 
-function formatDateTime(dateString) {
+function formatDateTime(dateString, timezone = userTimezone) {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(date);
+}
+
+async function loadUserSettings() {
+    try {
+        const response = await fetch('/api/settings');
+
+        if (!response.ok) {
+            console.warn('Failed to load user settings, using UTC');
+            userTimezone = 'UTC';
+            return;
+        }
+
+        const data = await response.json();
+        userTimezone = data.timezone || 'UTC';
+        console.log(`Loaded timezone: ${userTimezone}`);
+    } catch (error) {
+        console.error('Failed to load user settings:', error);
+        userTimezone = 'UTC';
+    }
+}
+
+function determineWeatherCondition(data) {
+    // Priority 1: Rain
+    if (data.rain_rate_in_hr && data.rain_rate_in_hr > 0) {
+        return {
+            condition: "Rainy",
+            icon: "🌧️",
+            description: "Rain"
+        };
+    }
+
+    // Priority 2: Night (very low solar radiation)
+    if (data.solar_radiation_wm2 !== null && data.solar_radiation_wm2 < 10) {
+        return {
+            condition: "Night",
+            icon: "🌙",
+            description: "Clear night"
+        };
+    }
+
+    // Priority 3: Sunny (high solar radiation)
+    if (data.solar_radiation_wm2 !== null && data.solar_radiation_wm2 >= 400) {
+        return {
+            condition: "Sunny",
+            icon: "☀️",
+            description: "Clear skies"
+        };
+    }
+
+    // Priority 4: Cloudy (low solar radiation)
+    if (data.solar_radiation_wm2 !== null && data.solar_radiation_wm2 < 400) {
+        return {
+            condition: "Cloudy",
+            icon: "☁️",
+            description: "Overcast"
+        };
+    }
+
+    // Fallback if no solar radiation data
+    return {
+        condition: "Unknown",
+        icon: "❓",
+        description: "Conditions unknown"
+    };
+}
+
+function formatRelativeTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMinutes = Math.floor(diffMs / 60000);
+
+    // Recent: show relative time
+    if (diffMinutes < 60) {
+        if (diffMinutes < 1) {
+            return "Updated just now";
+        }
+        const minutes = diffMinutes === 1 ? '1 minute' : `${diffMinutes} minutes`;
+        return `Updated ${minutes} ago`;
+    }
+
+    // Today: show time only
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTimezone,
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+        return `Updated at ${dateFormatter.format(date)}`;
+    }
+
+    // Older: show date and time
+    const fullFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTimezone,
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+    return `Updated ${fullFormatter.format(date)}`;
+}
+
+function updateHeroCard(data) {
+    // Determine weather condition
+    const weather = determineWeatherCondition(data);
+
+    // Update temperature
+    const heroTemp = document.getElementById('hero-temp');
+    if (heroTemp) {
+        heroTemp.textContent = data.outdoor_temp_f !== null ?
+            Math.round(data.outdoor_temp_f) : '--';
+    }
+
+    // Update condition with icon
+    const heroCondition = document.getElementById('hero-condition-text');
+    if (heroCondition) {
+        heroCondition.textContent = data.outdoor_temp_f !== null ?
+            `${weather.icon} ${weather.condition}` : 'Loading...';
+    }
+
+    // Update feels like
+    const heroFeelsLike = document.getElementById('hero-feels-like');
+    if (heroFeelsLike) {
+        heroFeelsLike.textContent = data.feels_like_f !== null ?
+            `Feels like ${Math.round(data.feels_like_f)}°F` : 'Feels like --°F';
+    }
+
+    // Update humidity
+    const heroHumidity = document.getElementById('hero-humidity');
+    if (heroHumidity) {
+        heroHumidity.textContent = data.humidity_pct !== null ?
+            `${data.humidity_pct}%` : '--%';
+    }
+
+    // Update wind
+    const heroWind = document.getElementById('hero-wind');
+    if (heroWind) {
+        heroWind.textContent = data.wind_speed_mph !== null ?
+            `${data.wind_speed_mph.toFixed(1)} mph` : '-- mph';
+    }
+
+    // Update pressure
+    const heroPressure = document.getElementById('hero-pressure');
+    if (heroPressure) {
+        heroPressure.textContent = data.relative_pressure_inhg !== null ?
+            `${data.relative_pressure_inhg.toFixed(2)} inHg` : '-- inHg';
+    }
+
+    // Update last updated timestamp
+    const heroLastUpdated = document.getElementById('hero-last-updated');
+    if (heroLastUpdated) {
+        heroLastUpdated.textContent = data.timestamp ?
+            formatRelativeTime(data.timestamp) : '--';
+    }
 }
