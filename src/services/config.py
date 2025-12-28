@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
+import pytz
 from src.models import Configuration
 
 logger = logging.getLogger(__name__)
@@ -78,3 +79,31 @@ def set_mqtt_config(db: Session, config: Dict[str, Any]) -> None:
         set_config_value(db, "mqtt.enabled", "true" if config["enabled"] else "false")
 
     logger.info("Updated MQTT configuration")
+
+
+def get_timezone(db: Session) -> str:
+    """Get display timezone from database
+
+    Args:
+        db: Database session
+
+    Returns:
+        Timezone string (IANA format, e.g., 'America/Chicago')
+    """
+    return get_config_value(db, "display.timezone", "UTC")
+
+
+def set_timezone(db: Session, timezone: str) -> None:
+    """Set display timezone in database with validation
+
+    Args:
+        db: Database session
+        timezone: Timezone string (IANA format)
+
+    Raises:
+        ValueError: If timezone is not valid
+    """
+    if timezone not in pytz.all_timezones:
+        raise ValueError(f"Invalid timezone: {timezone}")
+
+    set_config_value(db, "display.timezone", timezone)
