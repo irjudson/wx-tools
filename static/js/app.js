@@ -164,12 +164,22 @@ async function loadAllCharts() {
             });
         });
 
-        // Outdoor Conditions
+        // Outdoor Conditions - Temperature & Dew Point
         createOrUpdateChart('outdoor-temp', 'outdoor-temp-chart', {
-            label: 'Temperature (°F)',
-            data: readings.map(r => r.outdoor_temp_f),
-            borderColor: '#ef4444',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)'
+            datasets: [
+                {
+                    label: 'Temperature',
+                    data: readings.map(r => r.outdoor_temp_f),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                },
+                {
+                    label: 'Dew Point',
+                    data: readings.map(r => r.dew_point_f),
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)'
+                }
+            ]
         }, labels);
 
         createOrUpdateChart('outdoor-humidity', 'outdoor-humidity-chart', {
@@ -244,12 +254,24 @@ async function loadAllCharts() {
             backgroundColor: 'rgba(79, 70, 229, 0.1)'
         }, labels);
 
-        // Solar & UV
+        // Solar & UV - Combined chart with dual Y-axes
         createOrUpdateChart('solar-radiation', 'solar-radiation-chart', {
-            label: 'Solar Radiation (W/m²)',
-            data: readings.map(r => r.solar_radiation_wm2),
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            datasets: [
+                {
+                    label: 'Solar Radiation (W/m²)',
+                    data: readings.map(r => r.solar_radiation_wm2),
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'UV Index',
+                    data: readings.map(r => r.uv_index),
+                    borderColor: '#eab308',
+                    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                    yAxisID: 'y'
+                }
+            ],
             yMin: 0
         }, labels);
 
@@ -310,12 +332,22 @@ async function loadAllCharts() {
             yMin: 0
         }, labels);
 
-        // Indoor Conditions
+        // Indoor Conditions - Temperature & Humidity
         createOrUpdateChart('indoor-temp', 'indoor-temp-chart', {
-            label: 'Indoor Temperature (°F)',
-            data: readings.map(r => r.indoor_temp_f),
-            borderColor: '#dc2626',
-            backgroundColor: 'rgba(220, 38, 38, 0.1)'
+            datasets: [
+                {
+                    label: 'Temperature (°F)',
+                    data: readings.map(r => r.indoor_temp_f),
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)'
+                },
+                {
+                    label: 'Humidity (%)',
+                    data: readings.map(r => r.indoor_humidity_pct),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
+                }
+            ]
         }, labels);
 
         createOrUpdateChart('indoor-humidity', 'indoor-humidity-chart', {
@@ -328,10 +360,20 @@ async function loadAllCharts() {
         }, labels);
 
         createOrUpdateChart('indoor-feels-like', 'indoor-feels-like-chart', {
-            label: 'Indoor Feels Like (°F)',
-            data: readings.map(r => r.indoor_feels_like_f),
-            borderColor: '#ea580c',
-            backgroundColor: 'rgba(234, 88, 12, 0.1)'
+            datasets: [
+                {
+                    label: 'Feels Like',
+                    data: readings.map(r => r.indoor_feels_like_f),
+                    borderColor: '#ea580c',
+                    backgroundColor: 'rgba(234, 88, 12, 0.1)'
+                },
+                {
+                    label: 'Dew Point',
+                    data: readings.map(r => r.indoor_dew_point_f),
+                    borderColor: '#0891b2',
+                    backgroundColor: 'rgba(8, 145, 178, 0.1)'
+                }
+            ]
         }, labels);
 
         createOrUpdateChart('indoor-dew-point', 'indoor-dew-point-chart', {
@@ -405,21 +447,42 @@ function createOrUpdateChart(chartKey, canvasId, config, labels) {
         charts[chartKey].destroy();
     }
 
+    // Support both single dataset (config.data) and multiple datasets (config.datasets)
+    let datasets;
+    if (config.datasets) {
+        // Multiple datasets provided
+        datasets = config.datasets.map(ds => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: ds.borderColor,
+            backgroundColor: ds.backgroundColor,
+            borderWidth: 2,
+            fill: ds.fill !== undefined ? ds.fill : true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            yAxisID: ds.yAxisID || 'y'
+        }));
+    } else {
+        // Single dataset (backward compatibility)
+        datasets = [{
+            label: config.label,
+            data: config.data,
+            borderColor: config.borderColor,
+            backgroundColor: config.backgroundColor,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4
+        }];
+    }
+
     charts[chartKey] = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [{
-                label: config.label,
-                data: config.data,
-                borderColor: config.borderColor,
-                backgroundColor: config.backgroundColor,
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0,
-                pointHoverRadius: 4
-            }]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -430,7 +493,12 @@ function createOrUpdateChart(chartKey, canvasId, config, labels) {
             },
             plugins: {
                 legend: {
-                    display: false
+                    display: config.datasets ? true : false,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 6
+                    }
                 },
                 tooltip: {
                     callbacks: {
