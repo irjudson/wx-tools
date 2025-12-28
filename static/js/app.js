@@ -1105,14 +1105,22 @@ function formatRelativeTime(timestamp) {
         return `Updated ${minutes} ago`;
     }
 
-    // Today: show time only
+    // Today: show time only (timezone-aware comparison)
     const dateFormatter = new Intl.DateTimeFormat('en-US', {
         timeZone: userTimezone,
         hour: 'numeric',
         minute: '2-digit'
     });
 
-    const isToday = date.toDateString() === now.toDateString();
+    // Compare dates in user's configured timezone, not browser timezone
+    const userDateFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTimezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    const isToday = userDateFormatter.format(date) === userDateFormatter.format(now);
+
     if (isToday) {
         return `Updated at ${dateFormatter.format(date)}`;
     }
