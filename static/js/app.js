@@ -54,10 +54,14 @@ async function loadDashboard() {
     if (latest) {
         updateHeroCard(latest);
         updateWeatherCards(latest);
+        updateWindNeedleGauge(latest);
     }
     await Promise.all([
         loadDatabaseStats(),
-        loadAllCharts()
+        loadAllCharts(),
+        updateWindRose(),
+        updateSparklines(),
+        updateRainfallBars()
     ]);
 }
 
@@ -1381,5 +1385,371 @@ function updateWeatherCards(data) {
         uvLevelDesc.textContent = level;
     } else if (uvLevelDesc) {
         uvLevelDesc.textContent = '--';
+    }
+}
+
+// Wind needle gauge visualization
+function updateWindNeedleGauge(data) {
+    const canvas = document.getElementById('wind-needle-gauge');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const size = canvas.offsetWidth || 200;
+    canvas.width = size;
+    canvas.height = size;
+
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size * 0.4;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, size, size);
+
+    // Draw outer circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw direction markers (N, E, S, W)
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const directions = ['N', 'E', 'S', 'W'];
+    const angles = [0, 90, 180, 270];
+    directions.forEach((dir, i) => {
+        const angle = (angles[i] - 90) * Math.PI / 180;
+        const x = centerX + Math.cos(angle) * (radius + 20);
+        const y = centerY + Math.sin(angle) * (radius + 20);
+        ctx.fillText(dir, x, y);
+    });
+
+    // Draw speed arcs (0-10, 10-20, 20+)
+    const speedRanges = [
+        { max: 10, color: '#10b981', alpha: 0.2 },
+        { max: 20, color: '#f59e0b', alpha: 0.2 },
+        { max: Infinity, color: '#ef4444', alpha: 0.2 }
+    ];
+
+    if (data.wind_speed_mph !== null) {
+        const speed = data.wind_speed_mph;
+        speedRanges.forEach((range, i) => {
+            if (speed > (i * 10)) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * (0.3 + i * 0.2), 0, 2 * Math.PI);
+                ctx.fillStyle = range.color.replace(')', `, ${range.alpha})`).replace('rgb', 'rgba');
+                ctx.fill();
+            }
+        });
+
+        // Draw needle if we have direction
+        if (data.wind_direction_deg !== null) {
+            const angle = (data.wind_direction_deg - 90) * Math.PI / 180;
+
+            // Needle
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(
+                centerX + Math.cos(angle) * radius * 0.9,
+                centerY + Math.sin(angle) * radius * 0.9
+            );
+            ctx.strokeStyle = '#1f2937';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(
+                centerX + Math.cos(angle) * radius * 0.9,
+                centerY + Math.sin(angle) * radius * 0.9
+            );
+            ctx.lineTo(
+                centerX + Math.cos(angle - 0.3) * radius * 0.7,
+                centerY + Math.sin(angle - 0.3) * radius * 0.7
+            );
+            ctx.lineTo(
+                centerX + Math.cos(angle + 0.3) * radius * 0.7,
+                centerY + Math.sin(angle + 0.3) * radius * 0.7
+            );
+            ctx.closePath();
+            ctx.fillStyle = '#1f2937';
+            ctx.fill();
+        }
+
+        // Center circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#1f2937';
+        ctx.fill();
+
+        // Speed text
+        ctx.fillStyle = '#1f2937';
+        ctx.font = 'bold 16px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(speed.toFixed(1), centerX, centerY + 30);
+        ctx.font = '12px system-ui';
+        ctx.fillText('mph', centerX, centerY + 45);
+    }
+}
+
+// Store wind rose data globally
+let windRoseData = [];
+
+// Update wind rose with historical data
+async function updateWindRose() {
+    const canvas = document.getElementById('wind-rose');
+    if (!canvas) return;
+
+    // Fetch last 24 hours of data for wind rose
+    try {
+        const endDate = new Date();
+        const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
+
+        const response = await fetch(
+            `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=1000`
+        );
+
+        if (!response.ok) return;
+
+        const readings = await response.json();
+
+        // Group by direction (16 sectors) and speed ranges
+        const sectors = 16;
+        const speedRanges = [
+            { min: 0, max: 5, color: '#10b981' },
+            { min: 5, max: 10, color: '#3b82f6' },
+            { min: 10, max: 15, color: '#f59e0b' },
+            { min: 15, max: Infinity, color: '#ef4444' }
+        ];
+
+        const windData = Array.from({ length: sectors }, () =>
+            speedRanges.map(() => 0)
+        );
+
+        readings.forEach(r => {
+            if (r.wind_direction_deg !== null && r.wind_speed_mph !== null) {
+                const sector = Math.floor(((r.wind_direction_deg + 11.25) % 360) / 22.5);
+                const speedRangeIdx = speedRanges.findIndex(range =>
+                    r.wind_speed_mph >= range.min && r.wind_speed_mph < range.max
+                );
+                if (speedRangeIdx >= 0) {
+                    windData[sector][speedRangeIdx]++;
+                }
+            }
+        });
+
+        // Render wind rose
+        const ctx = canvas.getContext('2d');
+        const size = canvas.offsetWidth || 180;
+        canvas.width = size;
+        canvas.height = size;
+
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const maxRadius = size * 0.4;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, size, size);
+
+        // Find max count for scaling
+        const maxCount = Math.max(...windData.flat());
+
+        // Draw concentric circles
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 1;
+        for (let i = 1; i <= 3; i++) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, maxRadius * i / 3, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        // Draw direction lines
+        for (let i = 0; i < 4; i++) {
+            const angle = i * Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(
+                centerX + Math.cos(angle - Math.PI/2) * maxRadius,
+                centerY + Math.sin(angle - Math.PI/2) * maxRadius
+            );
+            ctx.stroke();
+        }
+
+        // Draw direction labels
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const labels = ['N', 'E', 'S', 'W'];
+        labels.forEach((label, i) => {
+            const angle = i * Math.PI / 2 - Math.PI / 2;
+            const x = centerX + Math.cos(angle) * (maxRadius + 15);
+            const y = centerY + Math.sin(angle) * (maxRadius + 15);
+            ctx.fillText(label, x, y);
+        });
+
+        // Draw wind rose petals
+        windData.forEach((sectorData, sectorIdx) => {
+            const angle = sectorIdx * 2 * Math.PI / sectors - Math.PI / 2;
+            const nextAngle = (sectorIdx + 1) * 2 * Math.PI / sectors - Math.PI / 2;
+
+            let cumulativeRadius = 0;
+            sectorData.forEach((count, speedIdx) => {
+                if (count > 0) {
+                    const radius = (count / maxCount) * maxRadius;
+                    const outerRadius = cumulativeRadius + radius;
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, outerRadius, angle, nextAngle);
+                    ctx.lineTo(centerX, centerY);
+                    ctx.fillStyle = speedRanges[speedIdx].color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    cumulativeRadius = outerRadius;
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Failed to render wind rose:', error);
+    }
+}
+
+// Update sparklines
+async function updateSparklines() {
+    try {
+        const endDate = new Date();
+        const startDate = new Date(endDate.getTime() - (6 * 60 * 60 * 1000)); // Last 6 hours
+
+        const response = await fetch(
+            `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=100`
+        );
+
+        if (!response.ok) return;
+
+        const readings = await response.json();
+
+        // Outdoor temperature sparkline
+        drawSparkline('temp-sparkline', readings.map(r => r.outdoor_temp_f), '#ef4444');
+
+        // Indoor temperature sparkline
+        drawSparkline('indoor-temp-sparkline', readings.map(r => r.indoor_temp_f), '#dc2626');
+
+        // Pressure sparkline
+        drawSparkline('pressure-sparkline', readings.map(r => r.relative_pressure_inhg), '#6366f1');
+
+        // Humidity sparkline
+        drawSparkline('humidity-sparkline', readings.map(r => r.humidity_pct), '#3b82f6');
+
+    } catch (error) {
+        console.error('Failed to render sparklines:', error);
+    }
+}
+
+function drawSparkline(canvasId, data, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !data || data.length === 0) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.offsetWidth || canvas.width;
+    const height = canvas.height;
+
+    canvas.width = width;
+
+    // Filter out null values
+    const validData = data.filter(d => d !== null);
+    if (validData.length === 0) return;
+
+    const min = Math.min(...validData);
+    const max = Math.max(...validData);
+    const range = max - min || 1;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw line
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    data.forEach((value, i) => {
+        if (value === null) return;
+
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((value - min) / range) * (height - 10) - 5;
+
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+
+    ctx.stroke();
+
+    // Fill area under line
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fillStyle = color.replace(')', ', 0.1)').replace('rgb', 'rgba');
+    ctx.fill();
+}
+
+// Update rainfall bars
+async function updateRainfallBars() {
+    const canvas = document.getElementById('rainfall-bars');
+    if (!canvas) return;
+
+    try {
+        const endDate = new Date();
+        const startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
+
+        const response = await fetch(
+            `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=1000`
+        );
+
+        if (!response.ok) return;
+
+        const readings = await response.json();
+
+        // Group by hour
+        const hourlyData = Array(24).fill(0);
+        readings.forEach(r => {
+            if (r.rain_rate_in_hr !== null) {
+                const hour = new Date(r.timestamp).getHours();
+                hourlyData[hour] = Math.max(hourlyData[hour], r.rain_rate_in_hr);
+            }
+        });
+
+        // Render bar chart
+        const ctx = canvas.getContext('2d');
+        const width = canvas.offsetWidth || canvas.width;
+        const height = canvas.height;
+
+        canvas.width = width;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const maxRain = Math.max(...hourlyData, 0.01); // Avoid division by zero
+        const barWidth = width / 24;
+
+        hourlyData.forEach((rain, hour) => {
+            const barHeight = (rain / maxRain) * (height - 20);
+            const x = hour * barWidth;
+            const y = height - barHeight;
+
+            ctx.fillStyle = rain > 0 ? '#0ea5e9' : '#e5e7eb';
+            ctx.fillRect(x, y, barWidth - 2, barHeight);
+        });
+
+    } catch (error) {
+        console.error('Failed to render rainfall bars:', error);
     }
 }
