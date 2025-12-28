@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy.exc import SQLAlchemyError
 from src.database import SessionLocal
-from src.services.config import get_timezone, set_timezone
+from src.services.config import get_config_value, set_timezone
 
 def init_timezone():
     """Initialize the default timezone setting to UTC"""
@@ -20,12 +20,12 @@ def init_timezone():
         db = SessionLocal()
         try:
             # Check if timezone is already configured
-            existing = get_timezone(db)
-            if existing != "UTC":
-                # Already configured to non-default value
+            existing = get_config_value(db, "display.timezone")
+            if existing is not None:
+                # Already configured (either by user or previous init)
                 print(f"Timezone already configured: {existing}")
             else:
-                # Set default timezone to UTC
+                # Not configured - set default timezone to UTC
                 set_timezone(db, "UTC")
                 print("Initialized default timezone: UTC")
         finally:
