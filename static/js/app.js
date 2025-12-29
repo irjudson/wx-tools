@@ -1657,10 +1657,10 @@ function updateWeatherCards(data) {
             Math.round(data.indoor_temp_f) : '--';
     }
 
-    const indoorHumidity = document.getElementById('indoor-humidity-display');
-    if (indoorHumidity) {
-        indoorHumidity.textContent = data.indoor_humidity_pct !== null ?
-            data.indoor_humidity_pct + '%' : '--%';
+    const indoorHumidityHero = document.getElementById('indoor-humidity-hero');
+    if (indoorHumidityHero) {
+        indoorHumidityHero.textContent = data.indoor_humidity_pct !== null ?
+            data.indoor_humidity_pct : '--';
     }
 
     // Update indoor ranges asynchronously

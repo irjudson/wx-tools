@@ -1378,7 +1378,10 @@ h4 {
 }
 
 .awn-main-value {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 1.5rem;
     margin: 1.5rem 0;
 }
 
@@ -1396,20 +1399,21 @@ h4 {
 }
 
 .awn-secondary-value {
-    text-align: center;
-    margin: 0.5rem 0 1rem 0;
+    display: flex;
+    align-items: baseline;
 }
 
 .awn-secondary-number {
-    font-size: 2rem;
+    font-size: 2.67rem;
     font-weight: 600;
     color: var(--text-primary);
+    line-height: 1;
 }
 
 .awn-secondary-unit {
-    font-size: 1rem;
+    font-size: 1.33rem;
     color: var(--text-secondary);
-    margin-left: 0.5rem;
+    margin-left: 0.35rem;
 }
 
 .awn-sub-metrics {
