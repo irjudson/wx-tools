@@ -1804,13 +1804,13 @@ function updatePressureGauge(data) {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const size = canvas.offsetWidth || 200;
+    const size = canvas.offsetWidth || 250;
     canvas.width = size;
-    canvas.height = size * 0.6;
+    canvas.height = size;
 
     const centerX = size / 2;
-    const centerY = size * 0.75;
-    const radius = size * 0.4;
+    const centerY = size / 2;
+    const radius = size * 0.38;
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1820,18 +1820,18 @@ function updatePressureGauge(data) {
     const maxPressure = 31.5;
     const currentPressure = data.relative_pressure_inhg || 30.0;
 
-    // Draw arc background
+    // Draw outer circle background
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
-    ctx.lineWidth = 12;
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 14;
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.stroke();
 
-    // Draw pressure arc
-    const pressureAngle = Math.PI + ((currentPressure - minPressure) / (maxPressure - minPressure)) * Math.PI;
+    // Draw pressure arc - color based on pressure level
+    const pressureAngle = ((currentPressure - minPressure) / (maxPressure - minPressure)) * 2 * Math.PI;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, Math.PI, pressureAngle, false);
-    ctx.lineWidth = 12;
+    ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + pressureAngle);
+    ctx.lineWidth = 14;
 
     // Color based on pressure
     if (currentPressure < 29.8) {
@@ -1841,17 +1841,18 @@ function updatePressureGauge(data) {
     } else {
         ctx.strokeStyle = '#10b981'; // Normal - green
     }
+    ctx.lineCap = 'round';
     ctx.stroke();
 
     // Draw tick marks
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.lineWidth = 2;
-    for (let p = minPressure; p <= maxPressure; p += 0.5) {
-        const angle = Math.PI + ((p - minPressure) / (maxPressure - minPressure)) * Math.PI;
-        const x1 = centerX + Math.cos(angle) * (radius - 15);
-        const y1 = centerY + Math.sin(angle) * (radius - 15);
-        const x2 = centerX + Math.cos(angle) * (radius - 5);
-        const y2 = centerY + Math.sin(angle) * (radius - 5);
+    for (let i = 0; i <= 12; i++) {
+        const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
+        const x1 = centerX + Math.cos(angle) * (radius - 18);
+        const y1 = centerY + Math.sin(angle) * (radius - 18);
+        const x2 = centerX + Math.cos(angle) * (radius - 8);
+        const y2 = centerY + Math.sin(angle) * (radius - 8);
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
@@ -1859,15 +1860,23 @@ function updatePressureGauge(data) {
         ctx.stroke();
     }
 
-    // Draw center value
+    // Draw center pressure value
     ctx.fillStyle = 'var(--text-primary)';
-    ctx.font = 'bold 24px system-ui';
+    ctx.font = 'bold 48px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(currentPressure.toFixed(2), centerX, centerY - 10);
+    ctx.fillText(currentPressure.toFixed(2), centerX, centerY - 20);
 
-    ctx.font = '14px system-ui';
-    ctx.fillText('inHg', centerX, centerY + 15);
+    // Draw "inHg" label
+    ctx.font = '16px system-ui';
+    ctx.fillText('inHg', centerX, centerY + 10);
+
+    // Draw min/max range labels
+    ctx.font = '12px system-ui';
+    ctx.fillStyle = 'var(--text-secondary)';
+    ctx.fillText(minPressure.toFixed(1), centerX, centerY + 35);
+
+    ctx.fillText(maxPressure.toFixed(1), centerX, centerY + 50);
 }
 
 // Wind circular gauge (AWN style)
