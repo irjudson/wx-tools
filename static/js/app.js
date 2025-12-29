@@ -142,8 +142,8 @@ async function loadDatabaseStats() {
 
         container.innerHTML = `
             <div class="stat-item">
-                <div class="stat-value">${data.total_readings.toLocaleString()}</div>
-                <div class="stat-label">Total Readings</div>
+                <div class="stat-value">${formatShortDate(lastDate)}</div>
+                <div class="stat-label">Last Reading</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value">${data.coverage_days !== null ? Math.round(data.coverage_days) + ' days' : '--'}</div>
@@ -154,8 +154,8 @@ async function loadDatabaseStats() {
                 <div class="stat-label">First Reading</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value">${formatShortDate(lastDate)}</div>
-                <div class="stat-label">Last Reading</div>
+                <div class="stat-value">${data.total_readings.toLocaleString()}</div>
+                <div class="stat-label">Total Readings</div>
             </div>
         `;
     } catch (error) {
@@ -511,7 +511,15 @@ function createCardChart(chartKey, canvasId, config) {
             },
             scales: {
                 x: {
-                    display: false
+                    display: config.showXAxis || false,
+                    ticks: {
+                        font: { size: 9 },
+                        maxRotation: 0,
+                        autoSkipPadding: 20
+                    },
+                    grid: {
+                        display: false
+                    }
                 },
                 y: {
                     display: false,
@@ -2228,7 +2236,8 @@ async function updateSparklines() {
                     borderColor: '#8b5cf6',
                     backgroundColor: 'rgba(139, 92, 246, 0.1)'
                 }
-            ]
+            ],
+            showXAxis: true
         });
 
     } catch (error) {
