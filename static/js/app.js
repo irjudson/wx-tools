@@ -1398,18 +1398,6 @@ function updateWeatherCards(data) {
             data.indoor_humidity_pct : '--';
     }
 
-    const indoorDew = document.getElementById('indoor-dew');
-    if (indoorDew) {
-        indoorDew.textContent = data.indoor_dew_point_f !== null ?
-            `${Math.round(data.indoor_dew_point_f)}°F` : '--°F';
-    }
-
-    const indoorFeels = document.getElementById('indoor-feels');
-    if (indoorFeels) {
-        indoorFeels.textContent = data.indoor_feels_like_f !== null ?
-            `${Math.round(data.indoor_feels_like_f)}°F` : '--°F';
-    }
-
     // Wind Card
     const windDirection = document.getElementById('wind-direction');
     if (windDirection) {
