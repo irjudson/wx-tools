@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Station Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
-    <link rel="stylesheet" href="/static/css/style.css?v=3.4">
+    <link rel="stylesheet" href="/static/css/style.css?v=3.5">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -213,12 +213,11 @@
                                 <span id="wind-gust-value" class="metric-value">-- mph</span>
                             </div>
                         </div>
-                        <div class="card-bottom-action">
-                            <a href="/graphs#section-wind-speed" class="graph-link">
+                        <div class="awn-actions">
+                            <a href="/graphs#section-wind-speed" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
-                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
                     </div>
@@ -262,12 +261,11 @@
                                 <span id="rain-event" class="metric-value">-- in</span>
                             </div>
                         </div>
-                        <div class="card-bottom-action">
-                            <a href="/graphs#section-rainfall" class="graph-link">
+                        <div class="awn-actions">
+                            <a href="/graphs#section-rainfall" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
-                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
                     </div>
@@ -287,12 +285,11 @@
                                 <span id="pressure-trend-text" class="metric-value">Steady</span>
                             </div>
                         </div>
-                        <div class="card-bottom-action">
-                            <a href="/graphs#section-pressure" class="graph-link">
+                        <div class="awn-actions">
+                            <a href="/graphs#section-pressure" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
-                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
                     </div>
@@ -318,12 +315,11 @@
                             </div>
                         </div>
                         <canvas id="humidity-sparkline" height="60"></canvas>
-                        <div class="card-bottom-action">
-                            <a href="/graphs#section-humidity" class="graph-link">
+                        <div class="awn-actions">
+                            <a href="/graphs#section-humidity" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
-                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
                     </div>
@@ -345,12 +341,11 @@
                             </div>
                         </div>
                         <canvas id="solar-uv-sparkline" height="80"></canvas>
-                        <div class="card-bottom-action">
-                            <a href="/graphs#section-solar" class="graph-link">
+                        <div class="awn-actions">
+                            <a href="/graphs#section-solar" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
-                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
                     </div>
@@ -362,12 +357,11 @@
                             <span class="card-title">Wind Rose</span>
                         </div>
                         <canvas id="wind-rose" height="180"></canvas>
-                        <div class="card-bottom-action">
-                            <a href="/graphs#section-wind-direction" class="graph-link">
+                        <div class="awn-actions">
+                            <a href="/graphs#section-wind-direction" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
-                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
                     </div>
@@ -737,6 +731,6 @@
         </main>
     </div>
 
-    <script src="/static/js/app.js?v=3.4"></script>
+    <script src="/static/js/app.js?v=3.5">
 </body>
 </html>
