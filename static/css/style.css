@@ -637,7 +637,7 @@ h4 {
     box-shadow: 0 10px 30px rgba(30, 64, 175, 0.4);
     display: flex;
     align-items: center;
-    gap: 4rem;
+    gap: 2rem;
 }
 
 .hero-primary {
@@ -645,6 +645,7 @@ h4 {
     display: flex;
     align-items: center;
     gap: 3rem;
+    min-width: 0;
 }
 
 .current-temp-container {
@@ -695,9 +696,8 @@ h4 {
 }
 
 .hero-secondary {
-    flex-shrink: 0;
     display: flex;
-    gap: 3rem;
+    gap: 2rem;
 }
 
 .hero-metric {
