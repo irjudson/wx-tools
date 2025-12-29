@@ -1330,3 +1330,9 @@ h4 {
     width: 20px;
     height: 20px;
 }
+
+/* Hide large graphs section - cards have nice Chart.js charts now */
+.section-heading,
+.section-heading + .charts-grid {
+    display: none;
+}

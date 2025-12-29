@@ -396,6 +396,93 @@ async function loadAllCharts() {
     }
 }
 
+// Create compact Chart.js chart for weather cards
+function createCardChart(chartKey, canvasId, config) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    // Destroy existing chart if present
+    if (charts[chartKey]) {
+        charts[chartKey].destroy();
+    }
+
+    // Prepare datasets - support both single and multiple datasets
+    let datasets;
+    if (config.datasets) {
+        datasets = config.datasets.map(ds => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: ds.borderColor,
+            backgroundColor: ds.backgroundColor || ds.borderColor.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 3
+        }));
+    } else {
+        datasets = [{
+            label: config.label,
+            data: config.data,
+            borderColor: config.borderColor,
+            backgroundColor: config.backgroundColor || config.borderColor.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 3
+        }];
+    }
+
+    charts[chartKey] = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: config.labels || [],
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: config.datasets && config.datasets.length > 1,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 6,
+                        font: { size: 10 },
+                        padding: 8
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        title: function(context) {
+                            return '';  // No title for compact view
+                        },
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    display: false,
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
 function createOrUpdateChart(chartKey, canvasId, config, labels) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -1662,38 +1749,89 @@ async function updateSparklines() {
 
         const readings = await response.json();
 
-        // Outdoor temperature + dew point sparkline
-        drawDualSparkline('temp-sparkline',
-            readings.map(r => r.outdoor_temp_f),
-            readings.map(r => r.dew_point_f),
-            '#ef4444',
-            '#06b6d4'
-        );
+        // Create labels from timestamps
+        const labels = readings.map(r => {
+            const date = new Date(r.timestamp);
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        });
 
-        // Indoor temperature + humidity sparkline
-        drawDualSparkline('indoor-temp-sparkline',
-            readings.map(r => r.indoor_temp_f),
-            readings.map(r => r.indoor_humidity_pct),
-            '#dc2626',
-            '#2563eb'
-        );
+        // Outdoor temperature + dew point chart
+        createCardChart('card-temp', 'temp-sparkline', {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Temperature',
+                    data: readings.map(r => r.outdoor_temp_f),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                },
+                {
+                    label: 'Dew Point',
+                    data: readings.map(r => r.dew_point_f),
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)'
+                }
+            ]
+        });
 
-        // Pressure sparkline
-        drawSparkline('pressure-sparkline', readings.map(r => r.relative_pressure_inhg), '#6366f1');
+        // Indoor temperature + humidity chart
+        createCardChart('card-indoor', 'indoor-temp-sparkline', {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Temperature',
+                    data: readings.map(r => r.indoor_temp_f),
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)'
+                },
+                {
+                    label: 'Humidity',
+                    data: readings.map(r => r.indoor_humidity_pct),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
+                }
+            ]
+        });
 
-        // Humidity sparkline
-        drawSparkline('humidity-sparkline', readings.map(r => r.humidity_pct), '#3b82f6');
+        // Pressure chart
+        createCardChart('card-pressure', 'pressure-sparkline', {
+            labels: labels,
+            label: 'Pressure',
+            data: readings.map(r => r.relative_pressure_inhg),
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)'
+        });
 
-        // Solar & UV dual sparkline
-        drawDualSparkline('solar-uv-sparkline',
-            readings.map(r => r.solar_radiation_wm2),
-            readings.map(r => r.uv_index),
-            '#f59e0b',
-            '#eab308'
-        );
+        // Humidity chart
+        createCardChart('card-humidity', 'humidity-sparkline', {
+            labels: labels,
+            label: 'Humidity',
+            data: readings.map(r => r.humidity_pct),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+        });
+
+        // Solar & UV dual chart
+        createCardChart('card-solar', 'solar-uv-sparkline', {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Solar Radiation',
+                    data: readings.map(r => r.solar_radiation_wm2),
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)'
+                },
+                {
+                    label: 'UV Index',
+                    data: readings.map(r => r.uv_index),
+                    borderColor: '#eab308',
+                    backgroundColor: 'rgba(234, 179, 8, 0.1)'
+                }
+            ]
+        });
 
     } catch (error) {
-        console.error('Failed to render sparklines:', error);
+        console.error('Failed to render card charts:', error);
     }
 }
 
