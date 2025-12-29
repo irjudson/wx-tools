@@ -2201,19 +2201,19 @@ async function updateSparklines() {
             return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         });
 
-        // Solar & UV dual chart
+        // Solar & UV dual chart (reversed: current on right, past on left)
         createCardChart('card-solar', 'solar-uv-sparkline', {
-            labels: labels,
+            labels: labels.slice().reverse(),
             datasets: [
                 {
                     label: 'Solar Radiation',
-                    data: readings.map(r => r.solar_radiation_wm2),
+                    data: readings.map(r => r.solar_radiation_wm2).reverse(),
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.1)'
                 },
                 {
                     label: 'UV Index',
-                    data: readings.map(r => r.uv_index),
+                    data: readings.map(r => r.uv_index).reverse(),
                     borderColor: '#8b5cf6',
                     backgroundColor: 'rgba(139, 92, 246, 0.1)'
                 }
