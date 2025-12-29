@@ -174,14 +174,20 @@ function setupEventListeners() {
     const dropdown = document.getElementById('date-filter-dropdown');
 
     toggleBtn.addEventListener('click', function() {
-        const isExpanded = dropdown.classList.toggle('show');
-        toggleBtn.setAttribute('aria-expanded', isExpanded);
+        const isVisible = dropdown.style.display !== 'none';
+        if (isVisible) {
+            dropdown.style.display = 'none';
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            dropdown.style.display = 'block';
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
     });
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
         if (!event.target.closest('.date-range-controls')) {
-            dropdown.classList.remove('show');
+            dropdown.style.display = 'none';
             toggleBtn.setAttribute('aria-expanded', 'false');
         }
     });
