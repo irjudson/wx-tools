@@ -122,6 +122,10 @@
                             <span id="outdoor-temp-display" class="awn-value">--</span>
                             <span class="awn-unit">°F</span>
                         </div>
+                        <div class="awn-secondary-value">
+                            <span id="outdoor-humidity-hero" class="awn-secondary-number">--</span>
+                            <span class="awn-secondary-unit">% Humidity</span>
+                        </div>
                         <div class="awn-sub-metrics">
                             <div class="awn-metric">
                                 <span class="awn-label">Dew Point</span>
@@ -301,36 +305,6 @@
                         </div>
                         <div class="awn-actions">
                             <a href="/graphs#section-pressure" class="awn-action-btn" title="View detailed graphs">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Humidity Card -->
-                    <div class="weather-card glass">
-                        <div class="card-header">
-                            <span class="card-icon">💧</span>
-                            <span class="card-title">Humidity</span>
-                        </div>
-                        <div class="large-display">
-                            <span id="humidity-display" class="display-value">--</span>
-                            <span class="display-unit">%</span>
-                        </div>
-                        <div class="metric-row">
-                            <div class="metric-item">
-                                <span class="metric-label">Outdoor</span>
-                                <span id="humidity-outdoor-label" class="metric-value">--%</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-label">Indoor</span>
-                                <span id="humidity-indoor-label" class="metric-value">--%</span>
-                            </div>
-                        </div>
-                        <canvas id="humidity-sparkline" height="60"></canvas>
-                        <div class="awn-actions">
-                            <a href="/graphs#section-humidity" class="awn-action-btn" title="View detailed graphs">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>

@@ -1395,6 +1395,23 @@ h4 {
     margin-left: 0.25rem;
 }
 
+.awn-secondary-value {
+    text-align: center;
+    margin: 0.5rem 0 1rem 0;
+}
+
+.awn-secondary-number {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.awn-secondary-unit {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+
 .awn-sub-metrics {
     display: flex;
     justify-content: space-around;

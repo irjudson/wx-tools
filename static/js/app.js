@@ -1627,6 +1627,12 @@ function updateWeatherCards(data) {
             Math.round(data.outdoor_temp_f) : '--';
     }
 
+    const outdoorHumidityHero = document.getElementById('outdoor-humidity-hero');
+    if (outdoorHumidityHero) {
+        outdoorHumidityHero.textContent = data.humidity_pct !== null ?
+            data.humidity_pct : '--';
+    }
+
     const outdoorDew = document.getElementById('outdoor-dew');
     if (outdoorDew) {
         outdoorDew.textContent = data.dew_point_f !== null ?
@@ -1726,25 +1732,6 @@ function updateWeatherCards(data) {
 
     // Pressure Card - update gauge
     updatePressureGauge(data);
-
-    // Humidity Card
-    const humidityDisplay = document.getElementById('humidity-display');
-    if (humidityDisplay) {
-        humidityDisplay.textContent = data.humidity_pct !== null ?
-            data.humidity_pct : '--';
-    }
-
-    const humidityOutdoor = document.getElementById('humidity-outdoor-label');
-    if (humidityOutdoor) {
-        humidityOutdoor.textContent = data.humidity_pct !== null ?
-            `${data.humidity_pct}%` : '--%';
-    }
-
-    const humidityIndoor = document.getElementById('humidity-indoor-label');
-    if (humidityIndoor) {
-        humidityIndoor.textContent = data.indoor_humidity_pct !== null ?
-            `${data.indoor_humidity_pct}%` : '--%';
-    }
 
     // Solar & UV Card
     const solarDisplay = document.getElementById('solar-display');
@@ -2205,25 +2192,6 @@ async function updateSparklines() {
         const labels = readings.map(r => {
             const date = new Date(r.timestamp);
             return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        });
-
-        // Humidity chart - indoor + outdoor
-        createCardChart('card-humidity', 'humidity-sparkline', {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Outdoor',
-                    data: readings.map(r => r.humidity_pct),
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)'
-                },
-                {
-                    label: 'Indoor',
-                    data: readings.map(r => r.indoor_humidity_pct),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)'
-                }
-            ]
         });
 
         // Solar & UV dual chart
