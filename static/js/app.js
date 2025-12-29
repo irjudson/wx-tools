@@ -164,22 +164,12 @@ async function loadAllCharts() {
             });
         });
 
-        // Outdoor Conditions - Temperature & Dew Point
+        // Outdoor Conditions
         createOrUpdateChart('outdoor-temp', 'outdoor-temp-chart', {
-            datasets: [
-                {
-                    label: 'Temperature',
-                    data: readings.map(r => r.outdoor_temp_f),
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                },
-                {
-                    label: 'Dew Point',
-                    data: readings.map(r => r.dew_point_f),
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)'
-                }
-            ]
+            label: 'Temperature (°F)',
+            data: readings.map(r => r.outdoor_temp_f),
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)'
         }, labels);
 
         createOrUpdateChart('outdoor-humidity', 'outdoor-humidity-chart', {
@@ -254,24 +244,12 @@ async function loadAllCharts() {
             backgroundColor: 'rgba(79, 70, 229, 0.1)'
         }, labels);
 
-        // Solar & UV - Combined chart with dual Y-axes
+        // Solar & UV
         createOrUpdateChart('solar-radiation', 'solar-radiation-chart', {
-            datasets: [
-                {
-                    label: 'Solar Radiation (W/m²)',
-                    data: readings.map(r => r.solar_radiation_wm2),
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'UV Index',
-                    data: readings.map(r => r.uv_index),
-                    borderColor: '#eab308',
-                    backgroundColor: 'rgba(234, 179, 8, 0.1)',
-                    yAxisID: 'y'
-                }
-            ],
+            label: 'Solar Radiation (W/m²)',
+            data: readings.map(r => r.solar_radiation_wm2),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
             yMin: 0
         }, labels);
 
@@ -332,22 +310,12 @@ async function loadAllCharts() {
             yMin: 0
         }, labels);
 
-        // Indoor Conditions - Temperature & Humidity
+        // Indoor Conditions
         createOrUpdateChart('indoor-temp', 'indoor-temp-chart', {
-            datasets: [
-                {
-                    label: 'Temperature (°F)',
-                    data: readings.map(r => r.indoor_temp_f),
-                    borderColor: '#dc2626',
-                    backgroundColor: 'rgba(220, 38, 38, 0.1)'
-                },
-                {
-                    label: 'Humidity (%)',
-                    data: readings.map(r => r.indoor_humidity_pct),
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
-                }
-            ]
+            label: 'Indoor Temperature (°F)',
+            data: readings.map(r => r.indoor_temp_f),
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)'
         }, labels);
 
         createOrUpdateChart('indoor-humidity', 'indoor-humidity-chart', {
@@ -360,20 +328,10 @@ async function loadAllCharts() {
         }, labels);
 
         createOrUpdateChart('indoor-feels-like', 'indoor-feels-like-chart', {
-            datasets: [
-                {
-                    label: 'Feels Like',
-                    data: readings.map(r => r.indoor_feels_like_f),
-                    borderColor: '#ea580c',
-                    backgroundColor: 'rgba(234, 88, 12, 0.1)'
-                },
-                {
-                    label: 'Dew Point',
-                    data: readings.map(r => r.indoor_dew_point_f),
-                    borderColor: '#0891b2',
-                    backgroundColor: 'rgba(8, 145, 178, 0.1)'
-                }
-            ]
+            label: 'Indoor Feels Like (°F)',
+            data: readings.map(r => r.indoor_feels_like_f),
+            borderColor: '#ea580c',
+            backgroundColor: 'rgba(234, 88, 12, 0.1)'
         }, labels);
 
         createOrUpdateChart('indoor-dew-point', 'indoor-dew-point-chart', {
@@ -1704,11 +1662,21 @@ async function updateSparklines() {
 
         const readings = await response.json();
 
-        // Outdoor temperature sparkline
-        drawSparkline('temp-sparkline', readings.map(r => r.outdoor_temp_f), '#ef4444');
+        // Outdoor temperature + dew point sparkline
+        drawDualSparkline('temp-sparkline',
+            readings.map(r => r.outdoor_temp_f),
+            readings.map(r => r.dew_point_f),
+            '#ef4444',
+            '#06b6d4'
+        );
 
-        // Indoor temperature sparkline
-        drawSparkline('indoor-temp-sparkline', readings.map(r => r.indoor_temp_f), '#dc2626');
+        // Indoor temperature + humidity sparkline
+        drawDualSparkline('indoor-temp-sparkline',
+            readings.map(r => r.indoor_temp_f),
+            readings.map(r => r.indoor_humidity_pct),
+            '#dc2626',
+            '#2563eb'
+        );
 
         // Pressure sparkline
         drawSparkline('pressure-sparkline', readings.map(r => r.relative_pressure_inhg), '#6366f1');
