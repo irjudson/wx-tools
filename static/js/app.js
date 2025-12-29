@@ -119,14 +119,52 @@ async function loadDatabaseStats() {
 
         const data = await response.json();
 
+        // Format dates
+        const firstDate = data.first_reading ? new Date(data.first_reading) : null;
+        const lastDate = data.last_reading ? new Date(data.last_reading) : null;
+
+        const formatShortDate = (date) => {
+            if (!date) return '--';
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const isYesterday = date.toDateString() === yesterday.toDateString();
+
+            if (isToday) {
+                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            } else if (isYesterday) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        };
+
         container.innerHTML = `
-            <p><strong>Total Readings:</strong> ${data.total_readings.toLocaleString()}</p>
-            <p><strong>First Reading:</strong> ${data.first_reading ? formatDateTime(data.first_reading) : 'N/A'}</p>
-            <p><strong>Last Reading:</strong> ${data.last_reading ? formatDateTime(data.last_reading) : 'N/A'}</p>
-            <p><strong>Date Range:</strong> ${data.coverage_days !== null && data.coverage_days !== undefined ? data.coverage_days.toFixed(1) + ' days' : 'N/A'}</p>
+            <div class="stat-item">
+                <div class="stat-value">${data.total_readings.toLocaleString()}</div>
+                <div class="stat-label">Total Readings</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${data.coverage_days !== null ? Math.round(data.coverage_days) + ' days' : '--'}</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${formatShortDate(firstDate)}</div>
+                <div class="stat-label">First Reading</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${formatShortDate(lastDate)}</div>
+                <div class="stat-label">Last Reading</div>
+            </div>
         `;
     } catch (error) {
-        container.innerHTML = `<p class="error">Failed to load statistics</p>`;
+        container.innerHTML = `
+            <div class="stat-item" style="grid-column: 1 / -1;">
+                <div class="stat-value error">Error</div>
+                <div class="stat-label">Failed to load statistics</div>
+            </div>
+        `;
         console.error('Failed to load database stats:', error);
     }
 }

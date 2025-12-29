@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Station Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
-    <link rel="stylesheet" href="/static/css/style.css?v=2.8">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.9">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -17,10 +17,28 @@
             </div>
 
             <!-- Station Statistics -->
-            <div class="stats-card glass">
-                <h3>Station Statistics</h3>
-                <div id="database-stats" class="stat-content">
-                    <p class="loading">Loading...</p>
+            <div class="station-stats glass">
+                <div class="stats-header">
+                    <span class="stats-icon">📊</span>
+                    <h3>Station Statistics</h3>
+                </div>
+                <div id="database-stats" class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Total Readings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Coverage</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">First Reading</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Last Reading</div>
+                    </div>
                 </div>
             </div>
 
@@ -669,6 +687,6 @@
         </main>
     </div>
 
-    <script src="/static/js/app.js?v=2.8"></script>
+    <script src="/static/js/app.js?v=2.9"></script>
 </body>
 </html>

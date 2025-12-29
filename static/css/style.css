@@ -58,7 +58,7 @@ body {
 }
 
 /* Station Statistics in Sidebar */
-.sidebar .stats-card {
+.sidebar .station-stats {
     margin: 1rem 1.5rem;
     padding: 1rem;
     background: rgba(0, 0, 0, 0.02);
@@ -67,15 +67,58 @@ body {
     box-shadow: none;
 }
 
-.sidebar .stats-card h3 {
-    font-size: 0.75rem;
-    margin-bottom: 0.75rem;
-    color: var(--text-secondary);
+.sidebar .stats-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
 }
 
-.sidebar .stats-card .stat-content {
-    font-size: 0.8rem;
-    color: var(--text-primary);
+.sidebar .stats-icon {
+    font-size: 1rem;
+}
+
+.sidebar .stats-header h3 {
+    font-size: 0.75rem;
+    margin: 0;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.sidebar .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.sidebar .stat-item {
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sidebar .stat-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.sidebar .stat-label {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+}
+
+.sidebar .stat-value.error {
+    color: #ef4444;
 }
 
 .nav-menu {
