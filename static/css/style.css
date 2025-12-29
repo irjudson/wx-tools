@@ -636,8 +636,9 @@ h4 {
     color: white;
     box-shadow: 0 10px 30px rgba(30, 64, 175, 0.4);
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    gap: 4rem;
 }
 
 .hero-primary {
@@ -695,7 +696,12 @@ h4 {
 
 .hero-secondary {
     display: flex;
-    gap: 3rem;
+    justify-content: space-around;
+    flex: 1;
+    gap: 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem 2rem;
+    border-radius: 12px;
 }
 
 .hero-metric {
@@ -707,7 +713,6 @@ h4 {
 .metric-icon {
     font-size: 2.5rem;
     opacity: 1;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
 .metric-details {
@@ -720,14 +725,14 @@ h4 {
     font-size: 1.75rem;
     font-weight: 800;
     line-height: 1.1;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    color: #e0f2fe;
 }
 
 .metric-label {
     font-size: 0.9375rem;
-    opacity: 1;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
+    color: #bae6fd;
     letter-spacing: 0.05em;
 }
 
