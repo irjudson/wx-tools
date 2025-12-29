@@ -1838,11 +1838,23 @@ function updatePressureGauge(data) {
     ctx.lineCap = 'round';
     ctx.stroke();
 
-    // Draw tick marks
+    // Draw tick marks with labels (AWN style)
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.lineWidth = 2;
-    for (let i = 0; i <= 12; i++) {
-        const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
+    ctx.fillStyle = 'var(--text-secondary)';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Draw ticks at 0.5 inHg intervals
+    const pressureRange = maxPressure - minPressure; // 2.0 inHg
+    const numTicks = 5; // 29.0, 29.5, 30.0, 30.5, 31.0
+
+    for (let i = 0; i <= numTicks; i++) {
+        const pressure = minPressure + (i / numTicks) * pressureRange;
+        const angle = (i / numTicks) * 2 * Math.PI - Math.PI / 2;
+
+        // Tick mark
         const x1 = centerX + Math.cos(angle) * (radius - 18);
         const y1 = centerY + Math.sin(angle) * (radius - 18);
         const x2 = centerX + Math.cos(angle) * (radius - 8);
@@ -1852,6 +1864,11 @@ function updatePressureGauge(data) {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
+
+        // Label inside circle
+        const labelX = centerX + Math.cos(angle) * (radius - 28);
+        const labelY = centerY + Math.sin(angle) * (radius - 28);
+        ctx.fillText(pressure.toFixed(1), labelX, labelY);
     }
 
     // Draw center pressure value
@@ -1863,14 +1880,8 @@ function updatePressureGauge(data) {
 
     // Draw "inHg" label
     ctx.font = '16px system-ui';
-    ctx.fillText('inHg', centerX, centerY + 10);
-
-    // Draw min/max range labels
-    ctx.font = '12px system-ui';
     ctx.fillStyle = 'var(--text-secondary)';
-    ctx.fillText(minPressure.toFixed(1), centerX, centerY + 35);
-
-    ctx.fillText(maxPressure.toFixed(1), centerX, centerY + 50);
+    ctx.fillText('inHg', centerX, centerY + 10);
 }
 
 // Wind circular gauge (AWN style)
