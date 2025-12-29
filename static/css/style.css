@@ -1336,3 +1336,13 @@ h4 {
 .section-heading + .charts-grid {
     display: none;
 }
+
+/* Fix card chart heights to prevent infinite growth */
+#temp-sparkline,
+#indoor-temp-sparkline,
+#pressure-sparkline,
+#humidity-sparkline,
+#solar-uv-sparkline {
+    height: 60px !important;
+    max-height: 60px !important;
+}

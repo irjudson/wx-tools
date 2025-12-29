@@ -442,7 +442,8 @@ function createCardChart(chartKey, canvasId, config) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
+            aspectRatio: 6,
             interaction: {
                 intersect: false,
                 mode: 'index'
