@@ -1756,7 +1756,7 @@ async function updateSparklines() {
             return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         });
 
-        // Outdoor temperature + dew point chart
+        // Outdoor temperature + feels like chart
         createCardChart('card-temp', 'temp-sparkline', {
             labels: labels,
             datasets: [
@@ -1767,10 +1767,10 @@ async function updateSparklines() {
                     backgroundColor: 'rgba(239, 68, 68, 0.1)'
                 },
                 {
-                    label: 'Dew Point',
-                    data: readings.map(r => r.dew_point_f),
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)'
+                    label: 'Feels Like',
+                    data: readings.map(r => r.feels_like_f),
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)'
                 }
             ]
         });
@@ -1803,13 +1803,23 @@ async function updateSparklines() {
             backgroundColor: 'rgba(99, 102, 241, 0.1)'
         });
 
-        // Humidity chart
+        // Humidity chart - indoor + outdoor
         createCardChart('card-humidity', 'humidity-sparkline', {
             labels: labels,
-            label: 'Humidity',
-            data: readings.map(r => r.humidity_pct),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+            datasets: [
+                {
+                    label: 'Outdoor',
+                    data: readings.map(r => r.humidity_pct),
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)'
+                },
+                {
+                    label: 'Indoor',
+                    data: readings.map(r => r.indoor_humidity_pct),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                }
+            ]
         });
 
         // Solar & UV dual chart
@@ -1825,8 +1835,8 @@ async function updateSparklines() {
                 {
                     label: 'UV Index',
                     data: readings.map(r => r.uv_index),
-                    borderColor: '#eab308',
-                    backgroundColor: 'rgba(234, 179, 8, 0.1)'
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)'
                 }
             ]
         });
