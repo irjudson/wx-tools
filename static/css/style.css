@@ -1350,7 +1350,7 @@ h4 {
     max-height: 60px !important;
 }
 
-/* AWN-Style Card Design */
+/* WX Card Design (AWN-style) */
 .wx-card-header {
     display: flex;
     align-items: center;
@@ -1372,68 +1372,77 @@ h4 {
 .wx-title {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
     font-weight: 600;
 }
 
-.wx-main-value {
-    display: flex;
-    justify-content: center;
-    align-items: baseline;
-    gap: 1.5rem;
+/* Single hero value (Outdoor card) */
+.wx-hero-value {
+    text-align: center;
     margin: 1.5rem 0;
 }
 
-.wx-value {
-    font-size: 4rem;
-    font-weight: 700;
+.wx-hero-number {
+    font-size: 5rem;
+    font-weight: 300;
     color: var(--text-primary);
     line-height: 1;
 }
 
-.wx-unit {
+.wx-hero-unit {
     font-size: 2rem;
     color: var(--text-secondary);
+    font-weight: 300;
     margin-left: 0.25rem;
 }
 
-.wx-secondary-value {
+/* Dual heroes (Indoor card) */
+.wx-dual-heroes {
+    display: flex;
+    justify-content: space-around;
+    gap: 2rem;
+    margin: 1.5rem 0;
+    padding: 0 1rem;
+}
+
+.wx-hero-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.wx-hero-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+}
+
+.wx-hero-value-inline {
     display: flex;
     align-items: baseline;
+    gap: 0.25rem;
 }
 
-.wx-secondary-number {
-    font-size: 2.67rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1;
-}
-
-.wx-secondary-unit {
-    font-size: 1.33rem;
-    color: var(--text-secondary);
-    margin-left: 0.35rem;
-}
-
-.wx-sub-metrics {
+/* Metrics row (horizontal, AWN style) */
+.wx-metrics-row {
     display: flex;
     justify-content: space-around;
     gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
+    margin: 1rem 0;
+    padding: 0.75rem 0;
 }
 
-.wx-metric {
+.wx-metric-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
+    flex: 1;
 }
 
-.wx-label {
+.wx-metric-label {
     font-size: 0.75rem;
     color: var(--text-secondary);
     text-transform: capitalize;
@@ -1441,7 +1450,7 @@ h4 {
 
 .wx-metric-value {
     font-size: 0.875rem;
-    color: var(--text-primary);
+    color: #3b82f6;
     font-weight: 600;
 }
 

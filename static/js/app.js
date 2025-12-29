@@ -1627,11 +1627,6 @@ function updateWeatherCards(data) {
             Math.round(data.outdoor_temp_f) : '--';
     }
 
-    const outdoorHumidityHero = document.getElementById('outdoor-humidity-hero');
-    if (outdoorHumidityHero) {
-        outdoorHumidityHero.textContent = data.humidity_pct !== null ?
-            data.humidity_pct : '--';
-    }
 
     const outdoorDew = document.getElementById('outdoor-dew');
     if (outdoorDew) {
@@ -1661,6 +1656,18 @@ function updateWeatherCards(data) {
     if (indoorHumidityHero) {
         indoorHumidityHero.textContent = data.indoor_humidity_pct !== null ?
             data.indoor_humidity_pct : '--';
+    }
+
+    const indoorDew = document.getElementById('indoor-dew');
+    if (indoorDew) {
+        indoorDew.textContent = data.indoor_dew_point_f !== null ?
+            `${Math.round(data.indoor_dew_point_f)}°F` : '--°F';
+    }
+
+    const indoorFeels = document.getElementById('indoor-feels');
+    if (indoorFeels) {
+        indoorFeels.textContent = data.indoor_feels_like_f !== null ?
+            `${Math.round(data.indoor_feels_like_f)}°F` : '--°F';
     }
 
     // Update indoor ranges asynchronously
