@@ -636,12 +636,12 @@ h4 {
     color: white;
     box-shadow: 0 10px 30px rgba(30, 64, 175, 0.4);
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 4rem;
 }
 
 .hero-primary {
+    flex: 1;
     display: flex;
     align-items: center;
     gap: 3rem;
@@ -695,6 +695,7 @@ h4 {
 }
 
 .hero-secondary {
+    flex-shrink: 0;
     display: flex;
     gap: 3rem;
 }
