@@ -2198,53 +2198,6 @@ async function updateSparklines() {
             return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         });
 
-        // Outdoor temperature + feels like chart
-        createCardChart('card-temp', 'temp-sparkline', {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Temperature',
-                    data: readings.map(r => r.outdoor_temp_f),
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                },
-                {
-                    label: 'Feels Like',
-                    data: readings.map(r => r.feels_like_f),
-                    borderColor: '#f97316',
-                    backgroundColor: 'rgba(249, 115, 22, 0.1)'
-                }
-            ]
-        });
-
-        // Indoor temperature + humidity chart
-        createCardChart('card-indoor', 'indoor-temp-sparkline', {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Temperature',
-                    data: readings.map(r => r.indoor_temp_f),
-                    borderColor: '#dc2626',
-                    backgroundColor: 'rgba(220, 38, 38, 0.1)'
-                },
-                {
-                    label: 'Humidity',
-                    data: readings.map(r => r.indoor_humidity_pct),
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
-                }
-            ]
-        });
-
-        // Pressure chart
-        createCardChart('card-pressure', 'pressure-sparkline', {
-            labels: labels,
-            label: 'Pressure',
-            data: readings.map(r => r.relative_pressure_inhg),
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)'
-        });
-
         // Humidity chart - indoor + outdoor
         createCardChart('card-humidity', 'humidity-sparkline', {
             labels: labels,
