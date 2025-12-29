@@ -1402,6 +1402,222 @@ function updateHeroCard(data) {
     }
 }
 
+// Update AWN-style outdoor card with temperature ranges
+async function updateOutdoorRanges(currentTemp) {
+    const rangesContainer = document.getElementById('outdoor-ranges');
+    if (!rangesContainer) return;
+
+    try {
+        const now = new Date();
+
+        // Define time periods
+        const periods = [
+            { label: 'today', days: 0 },
+            { label: 'yesterday', days: 1 },
+            { label: 'week', days: 7 },
+            { label: 'month', days: 30 },
+            { label: 'year', days: 365 }
+        ];
+
+        const rangeData = await Promise.all(periods.map(async period => {
+            const endDate = new Date(now);
+            endDate.setHours(23, 59, 59, 999);
+
+            if (period.days > 0) {
+                endDate.setDate(endDate.getDate() - period.days);
+            }
+
+            const startDate = new Date(endDate);
+            startDate.setHours(0, 0, 0, 0);
+
+            if (period.label === 'yesterday') {
+                // Yesterday: full day from midnight to midnight
+                endDate.setHours(23, 59, 59, 999);
+            } else if (period.days > 1) {
+                // For week/month/year: go back N days
+                startDate.setDate(startDate.getDate() - period.days + 1);
+            }
+
+            const response = await fetch(
+                `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=10000`
+            );
+
+            if (!response.ok) return { label: period.label, min: null, max: null };
+
+            const readings = await response.json();
+            const temps = readings.map(r => r.outdoor_temp_f).filter(t => t !== null);
+
+            return {
+                label: period.label,
+                min: temps.length > 0 ? Math.min(...temps) : null,
+                max: temps.length > 0 ? Math.max(...temps) : null
+            };
+        }));
+
+        // Calculate global min/max for scaling
+        const allTemps = rangeData.flatMap(r => [r.min, r.max]).filter(t => t !== null);
+        const globalMin = allTemps.length > 0 ? Math.min(...allTemps) : 0;
+        const globalMax = allTemps.length > 0 ? Math.max(...allTemps) : 100;
+        const globalRange = globalMax - globalMin || 1;
+
+        // Render range rows
+        rangesContainer.innerHTML = rangeData.map(range => {
+            if (range.min === null || range.max === null) {
+                return `
+                    <div class="awn-range-row">
+                        <span class="awn-range-label">${range.label}</span>
+                        <div class="awn-range-bar">
+                            <span class="awn-range-min">--</span>
+                            <div class="awn-range-fill" style="left: 0%; width: 0%;"></div>
+                            <span class="awn-range-max">--</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Calculate percentage positions
+            const leftPercent = ((range.min - globalMin) / globalRange) * 100;
+            const widthPercent = ((range.max - range.min) / globalRange) * 100;
+
+            return `
+                <div class="awn-range-row">
+                    <span class="awn-range-label">${range.label}</span>
+                    <div class="awn-range-bar">
+                        <span class="awn-range-min">${Math.round(range.min)}°</span>
+                        <div class="awn-range-fill" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                        <span class="awn-range-max">${Math.round(range.max)}°</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Calculate "From Yesterday" change
+        const yesterdayData = rangeData.find(r => r.label === 'yesterday');
+        const fromYesterdayEl = document.getElementById('outdoor-from-yesterday');
+
+        if (fromYesterdayEl && currentTemp !== null && yesterdayData && yesterdayData.max !== null) {
+            const change = currentTemp - yesterdayData.max;
+            const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
+            const changeClass = change > 0 ? 'awn-change-positive' : change < 0 ? 'awn-change-negative' : '';
+
+            fromYesterdayEl.textContent = `${arrow} ${Math.abs(change).toFixed(1)}°F`;
+            fromYesterdayEl.className = `awn-metric-value awn-change ${changeClass}`;
+        }
+
+    } catch (error) {
+        console.error('Failed to load outdoor temperature ranges:', error);
+    }
+}
+
+// Generic range updater for all cards
+async function updateCardRanges(containerId, dataField, currentValue, yesterdayField = null) {
+    const rangesContainer = document.getElementById(containerId);
+    if (!rangesContainer) return;
+
+    try {
+        const now = new Date();
+        const periods = [
+            { label: 'today', days: 0 },
+            { label: 'yesterday', days: 1 },
+            { label: 'week', days: 7 },
+            { label: 'month', days: 30 },
+            { label: 'year', days: 365 }
+        ];
+
+        const rangeData = await Promise.all(periods.map(async period => {
+            const endDate = new Date(now);
+            endDate.setHours(23, 59, 59, 999);
+
+            if (period.days > 0) {
+                endDate.setDate(endDate.getDate() - period.days);
+            }
+
+            const startDate = new Date(endDate);
+            startDate.setHours(0, 0, 0, 0);
+
+            if (period.label === 'yesterday') {
+                endDate.setHours(23, 59, 59, 999);
+            } else if (period.days > 1) {
+                startDate.setDate(startDate.getDate() - period.days + 1);
+            }
+
+            const response = await fetch(
+                `/api/weather/readings?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=10000`
+            );
+
+            if (!response.ok) return { label: period.label, min: null, max: null };
+
+            const readings = await response.json();
+            const values = readings.map(r => r[dataField]).filter(v => v !== null);
+
+            return {
+                label: period.label,
+                min: values.length > 0 ? Math.min(...values) : null,
+                max: values.length > 0 ? Math.max(...values) : null
+            };
+        }));
+
+        const allValues = rangeData.flatMap(r => [r.min, r.max]).filter(v => v !== null);
+        const globalMin = allValues.length > 0 ? Math.min(...allValues) : 0;
+        const globalMax = allValues.length > 0 ? Math.max(...allValues) : 100;
+        const globalRange = globalMax - globalMin || 1;
+
+        rangesContainer.innerHTML = rangeData.map(range => {
+            if (range.min === null || range.max === null) {
+                return `
+                    <div class="awn-range-row">
+                        <span class="awn-range-label">${range.label}</span>
+                        <div class="awn-range-bar">
+                            <span class="awn-range-min">--</span>
+                            <div class="awn-range-fill" style="left: 0%; width: 0%;"></div>
+                            <span class="awn-range-max">--</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const leftPercent = ((range.min - globalMin) / globalRange) * 100;
+            const widthPercent = ((range.max - range.min) / globalRange) * 100;
+            const formatValue = (v) => dataField.includes('temp') ? Math.round(v) + '°' :
+                                       dataField.includes('pressure') ? v.toFixed(2) :
+                                       dataField.includes('rain') ? v.toFixed(2) :
+                                       Math.round(v);
+
+            return `
+                <div class="awn-range-row">
+                    <span class="awn-range-label">${range.label}</span>
+                    <div class="awn-range-bar">
+                        <span class="awn-range-min">${formatValue(range.min)}</span>
+                        <div class="awn-range-fill" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                        <span class="awn-range-max">${formatValue(range.max)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Update "From Yesterday" if element exists
+        if (yesterdayField && currentValue !== null) {
+            const yesterdayData = rangeData.find(r => r.label === 'yesterday');
+            const fromYesterdayEl = document.getElementById(yesterdayField);
+
+            if (fromYesterdayEl && yesterdayData && yesterdayData.max !== null) {
+                const change = currentValue - yesterdayData.max;
+                const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
+                const changeClass = change > 0 ? 'awn-change-positive' : change < 0 ? 'awn-change-negative' : '';
+                const formatChange = dataField.includes('temp') ? Math.abs(change).toFixed(1) + '°F' :
+                                   dataField.includes('pressure') ? Math.abs(change).toFixed(2) + ' inHg' :
+                                   Math.abs(change).toFixed(1);
+
+                fromYesterdayEl.textContent = `${arrow} ${formatChange}`;
+                fromYesterdayEl.className = `awn-metric-value awn-change ${changeClass}`;
+            }
+        }
+
+    } catch (error) {
+        console.error(`Failed to load ranges for ${containerId}:`, error);
+    }
+}
+
 // Update all weather cards with latest data
 function updateWeatherCards(data) {
     // Outdoor Card
@@ -1423,6 +1639,11 @@ function updateWeatherCards(data) {
             `${Math.round(data.feels_like_f)}°F` : '--°F';
     }
 
+    // Update AWN-style ranges asynchronously
+    if (data.outdoor_temp_f !== null) {
+        updateOutdoorRanges(data.outdoor_temp_f);
+    }
+
     // Indoor Card
     const indoorTemp = document.getElementById('indoor-temp-display');
     if (indoorTemp) {
@@ -1433,10 +1654,21 @@ function updateWeatherCards(data) {
     const indoorHumidity = document.getElementById('indoor-humidity-display');
     if (indoorHumidity) {
         indoorHumidity.textContent = data.indoor_humidity_pct !== null ?
-            data.indoor_humidity_pct : '--';
+            data.indoor_humidity_pct + '%' : '--%';
+    }
+
+    // Update indoor ranges asynchronously
+    if (data.indoor_temp_f !== null) {
+        updateCardRanges('indoor-ranges', 'indoor_temp_f', data.indoor_temp_f, 'indoor-from-yesterday');
     }
 
     // Wind Card
+    const windSpeedDisplay = document.getElementById('wind-speed-display');
+    if (windSpeedDisplay) {
+        windSpeedDisplay.textContent = data.wind_speed_mph !== null ?
+            data.wind_speed_mph.toFixed(1) : '--';
+    }
+
     const windDirection = document.getElementById('wind-direction');
     if (windDirection) {
         if (data.wind_direction_deg !== null) {
@@ -1454,6 +1686,9 @@ function updateWeatherCards(data) {
         windGust.textContent = data.wind_gust_mph !== null ?
             `${data.wind_gust_mph.toFixed(1)} mph` : '-- mph';
     }
+
+    // Update wind circular gauge
+    updateWindCircularGauge(data);
 
     // Rainfall Card
     const rainRate = document.getElementById('rain-rate');
@@ -1474,12 +1709,23 @@ function updateWeatherCards(data) {
             `${data.event_rain_in.toFixed(2)} in` : '-- in';
     }
 
-    // Pressure Card
-    const pressureDisplay = document.getElementById('pressure-display');
-    if (pressureDisplay) {
-        pressureDisplay.textContent = data.relative_pressure_inhg !== null ?
-            data.relative_pressure_inhg.toFixed(2) : '--';
+    const rainWeekly = document.getElementById('rain-weekly');
+    if (rainWeekly) {
+        rainWeekly.textContent = data.weekly_rain_in !== null ?
+            `${data.weekly_rain_in.toFixed(2)} in` : '-- in';
     }
+
+    const rainMonthly = document.getElementById('rain-monthly');
+    if (rainMonthly) {
+        rainMonthly.textContent = data.monthly_rain_in !== null ?
+            `${data.monthly_rain_in.toFixed(2)} in` : '-- in';
+    }
+
+    // Update rainfall cylinders
+    updateRainfallCylinders(data);
+
+    // Pressure Card - update gauge
+    updatePressureGauge(data);
 
     // Humidity Card
     const humidityDisplay = document.getElementById('humidity-display');
@@ -1503,29 +1749,199 @@ function updateWeatherCards(data) {
     // Solar & UV Card
     const solarDisplay = document.getElementById('solar-display');
     if (solarDisplay) {
-        solarDisplay.textContent = data.solar_radiation_wm2 !== null ?
-            Math.round(data.solar_radiation_wm2) : '--';
+        const solarValue = data.solar_radiation_wm2 !== null ?
+            data.solar_radiation_wm2.toFixed(1) : '0.0';
+        solarDisplay.textContent = `${solarValue} W/m²`;
     }
 
-    const uvDisplay = document.getElementById('uv-display');
-    if (uvDisplay) {
-        uvDisplay.textContent = data.uv_index !== null ?
-            data.uv_index.toFixed(1) : '--';
-    }
-
-    const uvLevelDesc = document.getElementById('uv-level-desc');
-    if (uvLevelDesc && data.uv_index !== null) {
+    const uvDisplayFull = document.getElementById('uv-display-full');
+    if (uvDisplayFull && data.uv_index !== null) {
         const uv = data.uv_index;
         let level = '';
-        if (uv < 3) level = 'Low';
-        else if (uv < 6) level = 'Moderate';
-        else if (uv < 8) level = 'High';
-        else if (uv < 11) level = 'Very High';
-        else level = 'Extreme';
-        uvLevelDesc.textContent = level;
-    } else if (uvLevelDesc) {
-        uvLevelDesc.textContent = '--';
+        if (uv < 3) level = 'Low Risk';
+        else if (uv < 6) level = 'Moderate Risk';
+        else if (uv < 8) level = 'High Risk';
+        else if (uv < 11) level = 'Very High Risk';
+        else level = 'Extreme Risk';
+        uvDisplayFull.textContent = `${uv.toFixed(1)} - ${level}`;
+    } else if (uvDisplayFull) {
+        uvDisplayFull.textContent = '0 - Low Risk';
     }
+}
+
+// Update rainfall cylinders with animated fill
+function updateRainfallCylinders(data) {
+    const maxRain = Math.max(
+        data.daily_rain_in || 0,
+        data.weekly_rain_in || 0,
+        data.monthly_rain_in || 0,
+        0.1 // Minimum scale
+    );
+
+    const todayFill = document.getElementById('rain-today-fill');
+    const weeklyFill = document.getElementById('rain-weekly-fill');
+    const monthlyFill = document.getElementById('rain-monthly-fill');
+
+    if (todayFill && data.daily_rain_in !== null) {
+        const percent = (data.daily_rain_in / maxRain) * 100;
+        todayFill.style.height = `${percent}%`;
+    }
+
+    if (weeklyFill && data.weekly_rain_in !== null) {
+        const percent = (data.weekly_rain_in / maxRain) * 100;
+        weeklyFill.style.height = `${percent}%`;
+    }
+
+    if (monthlyFill && data.monthly_rain_in !== null) {
+        const percent = (data.monthly_rain_in / maxRain) * 100;
+        monthlyFill.style.height = `${percent}%`;
+    }
+}
+
+// Update pressure gauge
+function updatePressureGauge(data) {
+    const canvas = document.getElementById('pressure-gauge');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const size = canvas.offsetWidth || 200;
+    canvas.width = size;
+    canvas.height = size * 0.6;
+
+    const centerX = size / 2;
+    const centerY = size * 0.75;
+    const radius = size * 0.4;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Pressure range: 28.5 - 31.5 inHg
+    const minPressure = 28.5;
+    const maxPressure = 31.5;
+    const currentPressure = data.relative_pressure_inhg || 30.0;
+
+    // Draw arc background
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, Math.PI, 0, false);
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.stroke();
+
+    // Draw pressure arc
+    const pressureAngle = Math.PI + ((currentPressure - minPressure) / (maxPressure - minPressure)) * Math.PI;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, Math.PI, pressureAngle, false);
+    ctx.lineWidth = 12;
+
+    // Color based on pressure
+    if (currentPressure < 29.8) {
+        ctx.strokeStyle = '#ef4444'; // Low pressure - red
+    } else if (currentPressure > 30.2) {
+        ctx.strokeStyle = '#3b82f6'; // High pressure - blue
+    } else {
+        ctx.strokeStyle = '#10b981'; // Normal - green
+    }
+    ctx.stroke();
+
+    // Draw tick marks
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.lineWidth = 2;
+    for (let p = minPressure; p <= maxPressure; p += 0.5) {
+        const angle = Math.PI + ((p - minPressure) / (maxPressure - minPressure)) * Math.PI;
+        const x1 = centerX + Math.cos(angle) * (radius - 15);
+        const y1 = centerY + Math.sin(angle) * (radius - 15);
+        const x2 = centerX + Math.cos(angle) * (radius - 5);
+        const y2 = centerY + Math.sin(angle) * (radius - 5);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    // Draw center value
+    ctx.fillStyle = 'var(--text-primary)';
+    ctx.font = 'bold 24px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentPressure.toFixed(2), centerX, centerY - 10);
+
+    ctx.font = '14px system-ui';
+    ctx.fillText('inHg', centerX, centerY + 15);
+}
+
+// Wind circular gauge (AWN style)
+function updateWindCircularGauge(data) {
+    const canvas = document.getElementById('wind-circular-gauge');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const size = canvas.offsetWidth || 250;
+    canvas.width = size;
+    canvas.height = size;
+
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size * 0.38;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const currentSpeed = data.wind_speed_mph || 0;
+    const maxDailyGust = data.max_daily_gust_mph || 0;
+    const maxSpeed = 30; // Max speed for gauge scale
+
+    // Draw outer circle background
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.stroke();
+
+    // Draw speed arc (yellow/gold like AWN)
+    const speedAngle = (currentSpeed / maxSpeed) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + speedAngle);
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = '#eab308'; // Yellow/gold
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Draw tick marks
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i <= 12; i++) {
+        const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
+        const x1 = centerX + Math.cos(angle) * (radius - 18);
+        const y1 = centerY + Math.sin(angle) * (radius - 18);
+        const x2 = centerX + Math.cos(angle) * (radius - 8);
+        const y2 = centerY + Math.sin(angle) * (radius - 8);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    // Draw center speed value
+    ctx.fillStyle = 'var(--text-primary)';
+    ctx.font = 'bold 48px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentSpeed.toFixed(1), centerX, centerY - 20);
+
+    // Draw "mph" label
+    ctx.font = '16px system-ui';
+    ctx.fillText('mph', centerX, centerY + 10);
+
+    // Draw "Today's Peak" label and value
+    ctx.font = '14px system-ui';
+    ctx.fillStyle = 'var(--text-secondary)';
+    ctx.fillText("Today's Peak:", centerX, centerY + 35);
+
+    ctx.font = 'bold 20px system-ui';
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillText(maxDailyGust.toFixed(1), centerX, centerY + 58);
 }
 
 // Wind needle gauge visualization

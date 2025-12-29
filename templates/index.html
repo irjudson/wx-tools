@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Station Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
-    <link rel="stylesheet" href="/static/css/style.css?v=2.9">
+    <link rel="stylesheet" href="/static/css/style.css?v=3.4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -114,73 +114,94 @@
                 <div class="weather-cards-grid">
                     <!-- Outdoor Card -->
                     <div class="weather-card glass">
-                        <div class="card-header">
-                            <span class="card-icon">🌡️</span>
-                            <span class="card-title">Outdoor</span>
-                            <a href="/graphs#section-outdoor" class="graph-link" aria-label="View detailed graphs for outdoor temperature">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="awn-card-header">
+                            <span class="awn-icon">🌡️</span>
+                            <span class="awn-title">Outdoor</span>
+                        </div>
+                        <div class="awn-main-value">
+                            <span id="outdoor-temp-display" class="awn-value">--</span>
+                            <span class="awn-unit">°F</span>
+                        </div>
+                        <div class="awn-sub-metrics">
+                            <div class="awn-metric">
+                                <span class="awn-label">Dew Point</span>
+                                <span id="outdoor-dew" class="awn-metric-value">--°F</span>
+                            </div>
+                            <div class="awn-metric">
+                                <span class="awn-label">From Yesterday</span>
+                                <span id="outdoor-from-yesterday" class="awn-metric-value awn-change">--</span>
+                            </div>
+                            <div class="awn-metric">
+                                <span class="awn-label">Feels Like</span>
+                                <span id="outdoor-feels" class="awn-metric-value">--°F</span>
+                            </div>
+                        </div>
+                        <div class="awn-ranges" id="outdoor-ranges">
+                            <div class="awn-range-row">
+                                <span class="awn-range-label">today</span>
+                                <div class="awn-range-bar">
+                                    <span class="awn-range-min">--</span>
+                                    <div class="awn-range-fill" style="left: 0%; width: 100%;"></div>
+                                    <span class="awn-range-max">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="awn-actions">
+                            <a href="/graphs#section-outdoor" class="awn-action-btn" title="View detailed graphs">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
                             </a>
                         </div>
-                        <div class="large-display">
-                            <span id="outdoor-temp-display" class="display-value">--</span>
-                            <span class="display-unit">°F</span>
-                        </div>
-                        <div class="metric-row">
-                            <div class="metric-item">
-                                <span class="metric-label">Dew Point</span>
-                                <span id="outdoor-dew" class="metric-value">--°F</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-label">Feels Like</span>
-                                <span id="outdoor-feels" class="metric-value">--°F</span>
-                            </div>
-                        </div>
-                        <canvas id="temp-sparkline" height="60"></canvas>
                     </div>
 
                     <!-- Indoor Card -->
                     <div class="weather-card glass">
-                        <div class="card-header">
-                            <span class="card-icon">🏠</span>
-                            <span class="card-title">Indoor</span>
-                            <a href="/graphs#section-indoor" class="graph-link" aria-label="View detailed graphs for indoor temperature">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="awn-card-header">
+                            <span class="awn-icon">🏠</span>
+                            <span class="awn-title">Indoor</span>
+                        </div>
+                        <div class="awn-main-value">
+                            <span id="indoor-temp-display" class="awn-value">--</span>
+                            <span class="awn-unit">°F</span>
+                        </div>
+                        <div class="awn-sub-metrics">
+                            <div class="awn-metric">
+                                <span class="awn-label">Humidity</span>
+                                <span id="indoor-humidity-display" class="awn-metric-value">--%</span>
+                            </div>
+                            <div class="awn-metric">
+                                <span class="awn-label">From Yesterday</span>
+                                <span id="indoor-from-yesterday" class="awn-metric-value awn-change">--</span>
+                            </div>
+                        </div>
+                        <div class="awn-ranges" id="indoor-ranges">
+                            <div class="awn-range-row">
+                                <span class="awn-range-label">today</span>
+                                <div class="awn-range-bar">
+                                    <span class="awn-range-min">--</span>
+                                    <div class="awn-range-fill" style="left: 0%; width: 100%;"></div>
+                                    <span class="awn-range-max">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="awn-actions">
+                            <a href="/graphs#section-indoor" class="awn-action-btn" title="View detailed graphs">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
                             </a>
                         </div>
-                        <div class="metric-row-large">
-                            <div class="metric-display">
-                                <span class="label-small">Temperature</span>
-                                <div class="value-large">
-                                    <span id="indoor-temp-display">--</span><span class="unit-small">°F</span>
-                                </div>
-                            </div>
-                            <div class="metric-display">
-                                <span class="label-small">Humidity</span>
-                                <div class="value-large">
-                                    <span id="indoor-humidity-display">--</span><span class="unit-small">%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <canvas id="indoor-temp-sparkline" height="60"></canvas>
                     </div>
 
-                    <!-- Wind Card with Circular Gauge -->
+                    <!-- Wind Card -->
                     <div class="weather-card glass">
                         <div class="card-header">
                             <span class="card-icon">💨</span>
                             <span class="card-title">Wind</span>
-                            <a href="/graphs#section-wind-speed" class="graph-link" aria-label="View detailed graphs for wind speed">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                                </svg>
-                            </a>
                         </div>
                         <div class="wind-gauge-container">
-                            <canvas id="wind-needle-gauge"></canvas>
+                            <canvas id="wind-circular-gauge"></canvas>
                         </div>
                         <div class="metric-row">
                             <div class="metric-item">
@@ -192,51 +213,73 @@
                                 <span id="wind-gust-value" class="metric-value">-- mph</span>
                             </div>
                         </div>
+                        <div class="card-bottom-action">
+                            <a href="/graphs#section-wind-speed" class="graph-link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                </svg>
+                                <span style="margin-left: 0.5rem;">View Graphs</span>
+                            </a>
+                        </div>
                     </div>
 
-                    <!-- Rainfall Card with Bar Chart -->
+                    <!-- Rainfall Card with 3-Cylinder Graph -->
                     <div class="weather-card glass">
                         <div class="card-header">
                             <span class="card-icon">💧</span>
                             <span class="card-title">Rainfall</span>
-                            <a href="/graphs#section-rainfall" class="graph-link" aria-label="View detailed graphs for rainfall">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                                </svg>
-                            </a>
                         </div>
-                        <canvas id="rainfall-bars" height="120"></canvas>
-                        <div class="metric-row metric-row-3">
+                        <div class="rainfall-cylinders">
+                            <div class="rainfall-cylinder">
+                                <div class="cylinder-container">
+                                    <div id="rain-today-fill" class="cylinder-fill" style="height: 0%"></div>
+                                </div>
+                                <span class="cylinder-value" id="rain-today">--</span>
+                                <span class="cylinder-label">Today</span>
+                            </div>
+                            <div class="rainfall-cylinder">
+                                <div class="cylinder-container">
+                                    <div id="rain-weekly-fill" class="cylinder-fill" style="height: 0%"></div>
+                                </div>
+                                <span class="cylinder-value" id="rain-weekly">--</span>
+                                <span class="cylinder-label">Weekly</span>
+                            </div>
+                            <div class="rainfall-cylinder">
+                                <div class="cylinder-container">
+                                    <div id="rain-monthly-fill" class="cylinder-fill" style="height: 0%"></div>
+                                </div>
+                                <span class="cylinder-value" id="rain-monthly">--</span>
+                                <span class="cylinder-label">Monthly</span>
+                            </div>
+                        </div>
+                        <div class="metric-row">
                             <div class="metric-item">
                                 <span class="metric-label">Rate</span>
                                 <span id="rain-rate" class="metric-value">-- in/hr</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-label">Today</span>
-                                <span id="rain-today" class="metric-value">-- in</span>
                             </div>
                             <div class="metric-item">
                                 <span class="metric-label">Event</span>
                                 <span id="rain-event" class="metric-value">-- in</span>
                             </div>
                         </div>
+                        <div class="card-bottom-action">
+                            <a href="/graphs#section-rainfall" class="graph-link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                </svg>
+                                <span style="margin-left: 0.5rem;">View Graphs</span>
+                            </a>
+                        </div>
                     </div>
 
-                    <!-- Pressure Card -->
+                    <!-- Pressure Card with Circular Gauge -->
                     <div class="weather-card glass">
                         <div class="card-header">
                             <span class="card-icon">🌡️</span>
                             <span class="card-title">Pressure</span>
-                            <a href="/graphs#section-pressure" class="graph-link" aria-label="View detailed graphs for atmospheric pressure">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                                </svg>
-                            </a>
                         </div>
-                        <div class="large-display">
-                            <span id="pressure-display" class="display-value">--</span>
-                            <span class="display-unit">inHg</span>
-                            <span id="pressure-trend" class="pressure-trend">−</span>
+                        <div class="pressure-gauge-container">
+                            <canvas id="pressure-gauge"></canvas>
                         </div>
                         <div class="metric-row">
                             <div class="metric-item">
@@ -244,7 +287,14 @@
                                 <span id="pressure-trend-text" class="metric-value">Steady</span>
                             </div>
                         </div>
-                        <canvas id="pressure-sparkline" height="60"></canvas>
+                        <div class="card-bottom-action">
+                            <a href="/graphs#section-pressure" class="graph-link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                </svg>
+                                <span style="margin-left: 0.5rem;">View Graphs</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Humidity Card -->
@@ -252,11 +302,6 @@
                         <div class="card-header">
                             <span class="card-icon">💧</span>
                             <span class="card-title">Humidity</span>
-                            <a href="/graphs#section-humidity" class="graph-link" aria-label="View detailed graphs for humidity">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                                </svg>
-                            </a>
                         </div>
                         <div class="large-display">
                             <span id="humidity-display" class="display-value">--</span>
@@ -273,39 +318,41 @@
                             </div>
                         </div>
                         <canvas id="humidity-sparkline" height="60"></canvas>
+                        <div class="card-bottom-action">
+                            <a href="/graphs#section-humidity" class="graph-link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                </svg>
+                                <span style="margin-left: 0.5rem;">View Graphs</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Solar/UV Card -->
                     <div class="weather-card glass">
                         <div class="card-header">
                             <span class="card-icon">☀️</span>
-                            <span class="card-title">Solar & UV</span>
-                            <a href="/graphs#section-solar" class="graph-link" aria-label="View detailed graphs for solar radiation and UV index">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <span class="card-title">Solar Radiation</span>
+                        </div>
+                        <div class="solar-readouts">
+                            <div class="solar-readout">
+                                <span class="solar-label">Solar Radiation</span>
+                                <span id="solar-display" class="solar-value">0.0 W/m²</span>
+                            </div>
+                            <div class="solar-readout">
+                                <span class="solar-label">UV Index</span>
+                                <span id="uv-display-full" class="solar-value">0 - Low Risk</span>
+                            </div>
+                        </div>
+                        <canvas id="solar-uv-sparkline" height="80"></canvas>
+                        <div class="card-bottom-action">
+                            <a href="/graphs#section-solar" class="graph-link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
+                                <span style="margin-left: 0.5rem;">View Graphs</span>
                             </a>
                         </div>
-                        <div class="metric-row-large">
-                            <div class="metric-display">
-                                <span class="label-small">Solar</span>
-                                <div class="value-large">
-                                    <span id="solar-display">--</span><span class="unit-small">W/m²</span>
-                                </div>
-                            </div>
-                            <div class="metric-display">
-                                <span class="label-small">UV Index</span>
-                                <div class="value-large">
-                                    <span id="uv-display" class="uv-value">--</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="metric-row">
-                            <div class="metric-item">
-                                <span id="uv-level-desc" class="metric-label">--</span>
-                            </div>
-                        </div>
-                        <canvas id="solar-uv-sparkline" height="60"></canvas>
                     </div>
 
                     <!-- Wind Rose -->
@@ -313,13 +360,16 @@
                         <div class="card-header">
                             <span class="card-icon">🧭</span>
                             <span class="card-title">Wind Rose</span>
-                            <a href="/graphs#section-wind-direction" class="graph-link" aria-label="View detailed graphs for wind direction">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                                </svg>
-                            </a>
                         </div>
                         <canvas id="wind-rose" height="180"></canvas>
+                        <div class="card-bottom-action">
+                            <a href="/graphs#section-wind-direction" class="graph-link">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                </svg>
+                                <span style="margin-left: 0.5rem;">View Graphs</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -687,6 +737,6 @@
         </main>
     </div>
 
-    <script src="/static/js/app.js?v=2.9"></script>
+    <script src="/static/js/app.js?v=3.4"></script>
 </body>
 </html>

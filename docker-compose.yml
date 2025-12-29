@@ -12,6 +12,9 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       - ./data:/data
+      - ./src:/app/src
+      - ./static:/app/static
+      - ./templates:/app/templates
     restart: unless-stopped
     networks:
       - shared-infra
