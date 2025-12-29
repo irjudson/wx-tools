@@ -862,17 +862,6 @@ h4 {
     margin-left: 0.25rem;
 }
 
-.wind-gauge-container {
-    display: flex;
-    justify-content: center;
-    padding: 0.25rem 0;
-}
-
-.wind-gauge-container canvas {
-    max-width: 160px;
-    max-height: 160px;
-}
-
 /* Pressure Trend Indicator */
 .pressure-trend {
     font-size: 2rem;
