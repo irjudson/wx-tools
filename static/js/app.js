@@ -1809,9 +1809,9 @@ function updatePressureGauge(data) {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Pressure range: 28.5 - 31.5 inHg
-    const minPressure = 28.5;
-    const maxPressure = 31.5;
+    // Pressure range: 29.0 - 31.0 inHg (AWN standard range)
+    const minPressure = 29.0;
+    const maxPressure = 31.0;
     const currentPressure = data.relative_pressure_inhg || 30.0;
 
     // Draw outer circle background

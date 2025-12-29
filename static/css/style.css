@@ -1486,7 +1486,7 @@ h4 {
 
 .wx-range-bar {
     position: relative;
-    height: 24px;
+    height: 8px;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     display: flex;
