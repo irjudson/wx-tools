@@ -1464,12 +1464,12 @@ async function updateOutdoorRanges(currentTemp) {
         rangesContainer.innerHTML = rangeData.map(range => {
             if (range.min === null || range.max === null) {
                 return `
-                    <div class="awn-range-row">
-                        <span class="awn-range-label">${range.label}</span>
-                        <div class="awn-range-bar">
-                            <span class="awn-range-min">--</span>
-                            <div class="awn-range-fill" style="left: 0%; width: 0%;"></div>
-                            <span class="awn-range-max">--</span>
+                    <div class="wx-range-row">
+                        <span class="wx-range-label">${range.label}</span>
+                        <div class="wx-range-bar">
+                            <span class="wx-range-min">--</span>
+                            <div class="wx-range-fill" style="left: 0%; width: 0%;"></div>
+                            <span class="wx-range-max">--</span>
                         </div>
                     </div>
                 `;
@@ -1480,12 +1480,12 @@ async function updateOutdoorRanges(currentTemp) {
             const widthPercent = ((range.max - range.min) / globalRange) * 100;
 
             return `
-                <div class="awn-range-row">
-                    <span class="awn-range-label">${range.label}</span>
-                    <div class="awn-range-bar">
-                        <span class="awn-range-min">${Math.round(range.min)}°</span>
-                        <div class="awn-range-fill" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
-                        <span class="awn-range-max">${Math.round(range.max)}°</span>
+                <div class="wx-range-row">
+                    <span class="wx-range-label">${range.label}</span>
+                    <div class="wx-range-bar">
+                        <span class="wx-range-min">${Math.round(range.min)}°</span>
+                        <div class="wx-range-fill" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                        <span class="wx-range-max">${Math.round(range.max)}°</span>
                     </div>
                 </div>
             `;
@@ -1498,10 +1498,10 @@ async function updateOutdoorRanges(currentTemp) {
         if (fromYesterdayEl && currentTemp !== null && yesterdayData && yesterdayData.max !== null) {
             const change = currentTemp - yesterdayData.max;
             const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
-            const changeClass = change > 0 ? 'awn-change-positive' : change < 0 ? 'awn-change-negative' : '';
+            const changeClass = change > 0 ? 'wx-change-positive' : change < 0 ? 'wx-change-negative' : '';
 
             fromYesterdayEl.textContent = `${arrow} ${Math.abs(change).toFixed(1)}°F`;
-            fromYesterdayEl.className = `awn-metric-value awn-change ${changeClass}`;
+            fromYesterdayEl.className = `wx-metric-value wx-change ${changeClass}`;
         }
 
     } catch (error) {
@@ -1565,12 +1565,12 @@ async function updateCardRanges(containerId, dataField, currentValue, yesterdayF
         rangesContainer.innerHTML = rangeData.map(range => {
             if (range.min === null || range.max === null) {
                 return `
-                    <div class="awn-range-row">
-                        <span class="awn-range-label">${range.label}</span>
-                        <div class="awn-range-bar">
-                            <span class="awn-range-min">--</span>
-                            <div class="awn-range-fill" style="left: 0%; width: 0%;"></div>
-                            <span class="awn-range-max">--</span>
+                    <div class="wx-range-row">
+                        <span class="wx-range-label">${range.label}</span>
+                        <div class="wx-range-bar">
+                            <span class="wx-range-min">--</span>
+                            <div class="wx-range-fill" style="left: 0%; width: 0%;"></div>
+                            <span class="wx-range-max">--</span>
                         </div>
                     </div>
                 `;
@@ -1584,12 +1584,12 @@ async function updateCardRanges(containerId, dataField, currentValue, yesterdayF
                                        Math.round(v);
 
             return `
-                <div class="awn-range-row">
-                    <span class="awn-range-label">${range.label}</span>
-                    <div class="awn-range-bar">
-                        <span class="awn-range-min">${formatValue(range.min)}</span>
-                        <div class="awn-range-fill" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
-                        <span class="awn-range-max">${formatValue(range.max)}</span>
+                <div class="wx-range-row">
+                    <span class="wx-range-label">${range.label}</span>
+                    <div class="wx-range-bar">
+                        <span class="wx-range-min">${formatValue(range.min)}</span>
+                        <div class="wx-range-fill" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                        <span class="wx-range-max">${formatValue(range.max)}</span>
                     </div>
                 </div>
             `;
@@ -1603,13 +1603,13 @@ async function updateCardRanges(containerId, dataField, currentValue, yesterdayF
             if (fromYesterdayEl && yesterdayData && yesterdayData.max !== null) {
                 const change = currentValue - yesterdayData.max;
                 const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
-                const changeClass = change > 0 ? 'awn-change-positive' : change < 0 ? 'awn-change-negative' : '';
+                const changeClass = change > 0 ? 'wx-change-positive' : change < 0 ? 'wx-change-negative' : '';
                 const formatChange = dataField.includes('temp') ? Math.abs(change).toFixed(1) + '°F' :
                                    dataField.includes('pressure') ? Math.abs(change).toFixed(2) + ' inHg' :
                                    Math.abs(change).toFixed(1);
 
                 fromYesterdayEl.textContent = `${arrow} ${formatChange}`;
-                fromYesterdayEl.className = `awn-metric-value awn-change ${changeClass}`;
+                fromYesterdayEl.className = `wx-metric-value wx-change ${changeClass}`;
             }
         }
 

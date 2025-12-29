@@ -1351,14 +1351,14 @@ h4 {
 }
 
 /* AWN-Style Card Design */
-.awn-card-header {
+.wx-card-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
 
-.awn-icon {
+.wx-icon {
     font-size: 1.5rem;
     background: rgba(59, 130, 246, 0.2);
     width: 40px;
@@ -1369,7 +1369,7 @@ h4 {
     justify-content: center;
 }
 
-.awn-title {
+.wx-title {
     font-size: 0.875rem;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -1377,7 +1377,7 @@ h4 {
     font-weight: 600;
 }
 
-.awn-main-value {
+.wx-main-value {
     display: flex;
     justify-content: center;
     align-items: baseline;
@@ -1385,38 +1385,38 @@ h4 {
     margin: 1.5rem 0;
 }
 
-.awn-value {
+.wx-value {
     font-size: 4rem;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1;
 }
 
-.awn-unit {
+.wx-unit {
     font-size: 2rem;
     color: var(--text-secondary);
     margin-left: 0.25rem;
 }
 
-.awn-secondary-value {
+.wx-secondary-value {
     display: flex;
     align-items: baseline;
 }
 
-.awn-secondary-number {
+.wx-secondary-number {
     font-size: 2.67rem;
     font-weight: 600;
     color: var(--text-primary);
     line-height: 1;
 }
 
-.awn-secondary-unit {
+.wx-secondary-unit {
     font-size: 1.33rem;
     color: var(--text-secondary);
     margin-left: 0.35rem;
 }
 
-.awn-sub-metrics {
+.wx-sub-metrics {
     display: flex;
     justify-content: space-around;
     gap: 1rem;
@@ -1426,42 +1426,42 @@ h4 {
     border-bottom: 1px solid var(--border-color);
 }
 
-.awn-metric {
+.wx-metric {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
 }
 
-.awn-label {
+.wx-label {
     font-size: 0.75rem;
     color: var(--text-secondary);
     text-transform: capitalize;
 }
 
-.awn-metric-value {
+.wx-metric-value {
     font-size: 0.875rem;
     color: var(--text-primary);
     font-weight: 600;
 }
 
-.awn-metric-value.awn-change {
+.wx-metric-value.wx-change {
     font-weight: 600;
 }
 
-.awn-metric-value.awn-change-positive {
+.wx-metric-value.wx-change-positive {
     color: #ef4444;
 }
 
-.awn-metric-value.awn-change-negative {
+.wx-metric-value.wx-change-negative {
     color: #3b82f6;
 }
 
-.awn-ranges {
+.wx-ranges {
     margin: 1rem 0;
 }
 
-.awn-range-row {
+.wx-range-row {
     display: grid;
     grid-template-columns: 60px 1fr;
     align-items: center;
@@ -1469,13 +1469,13 @@ h4 {
     margin-bottom: 0.75rem;
 }
 
-.awn-range-label {
+.wx-range-label {
     font-size: 0.75rem;
     color: var(--text-secondary);
     text-align: right;
 }
 
-.awn-range-bar {
+.wx-range-bar {
     position: relative;
     height: 24px;
     background: rgba(0, 0, 0, 0.1);
@@ -1486,7 +1486,7 @@ h4 {
     padding: 0 0.5rem;
 }
 
-.awn-range-fill {
+.wx-range-fill {
     position: absolute;
     top: 0;
     height: 100%;
@@ -1495,8 +1495,8 @@ h4 {
     transition: all 0.3s ease;
 }
 
-.awn-range-min,
-.awn-range-max {
+.wx-range-min,
+.wx-range-max {
     position: relative;
     z-index: 1;
     font-size: 0.75rem;
@@ -1504,7 +1504,7 @@ h4 {
     color: var(--text-primary);
 }
 
-.awn-actions {
+.wx-actions {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
@@ -1512,7 +1512,7 @@ h4 {
     border-top: 1px solid var(--border-color);
 }
 
-.awn-action-btn {
+.wx-action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1525,7 +1525,7 @@ h4 {
     text-decoration: none;
 }
 
-.awn-action-btn:hover {
+.wx-action-btn:hover {
     background: rgba(59, 130, 246, 0.2);
     transform: translateY(-2px);
 }
