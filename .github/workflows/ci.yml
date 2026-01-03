@@ -73,4 +73,7 @@ jobs:
 
     - name: Test Docker image
       run: |
-        docker run --rm weather-service:test python -c "import src.main; print('Import successful')"
+        docker run --rm \
+          -e DATABASE_URL=postgresql://postgres:password@localhost:5432/weather_data \
+          -e STATION_PASSKEY=test_passkey \
+          weather-service:test python -c "import src.main; print('Import successful')"
