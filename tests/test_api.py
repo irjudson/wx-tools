@@ -17,8 +17,11 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert "status" in data
-    assert data["status"] == "healthy"
+    # Expect "degraded" when database is empty (no readings)
+    assert data["status"] == "degraded"
     assert "database" in data
-    assert data["database"] == "not_checked"
+    assert data["database"] == "connected"
+    assert "data_freshness" in data
+    assert data["data_freshness"] == "no_data"
     assert "mqtt" in data
     assert data["mqtt"] == "not_configured"
