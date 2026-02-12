@@ -818,13 +818,13 @@ async def update_station_config(config: StationConfigRequest):
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Serve main dashboard page"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request, "page": "dashboard"})
 
 
 @app.get("/graphs", response_class=HTMLResponse)
 async def graphs_page(request: Request):
     """Serve graphs & analysis page"""
-    return templates.TemplateResponse("graphs.html", {"request": request})
+    return templates.TemplateResponse("graphs.html", {"request": request, "page": "graphs"})
 
 
 # Catch-all route MUST be last

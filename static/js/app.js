@@ -8,6 +8,7 @@ let userTimezone = 'UTC'; // Loaded from backend on init
 document.addEventListener('DOMContentLoaded', async () => {
     initializeNavigation();
     await loadUserSettings(); // Load timezone before dashboard
+    loadDatabaseStats(); // Load stats immediately (visible on all pages)
     loadDashboard();
     startDashboardAutoRefresh(); // Auto-refresh every minute
     initializeImportForm();
@@ -21,6 +22,7 @@ function initializeNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const sections = document.querySelectorAll('.content-section');
 
+    // Handle navigation clicks
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             const targetSection = item.getAttribute('data-section');
@@ -32,8 +34,11 @@ function initializeNavigation() {
                 return;
             }
 
-            // Otherwise, handle single-page navigation
+            // Handle single-page navigation
             e.preventDefault();
+
+            // Don't do anything if no data-section (e.g., external links)
+            if (!targetSection) return;
 
             // Update active nav item
             navItems.forEach(nav => nav.classList.remove('active'));
@@ -66,7 +71,6 @@ async function loadDashboard() {
         updateWindNeedleGauge(latest);
     }
     await Promise.all([
-        loadDatabaseStats(),
         loadAllCharts(),
         updateWindRose(),
         updateSparklines(),
@@ -85,6 +89,10 @@ function startDashboardAutoRefresh() {
 
     // Refresh every 60 seconds
     dashboardRefreshInterval = setInterval(() => {
+        // Always refresh stats (visible on all pages in sidebar)
+        loadDatabaseStats();
+
+        // Only refresh dashboard content if dashboard is active
         const dashboardSection = document.getElementById('dashboard');
         if (dashboardSection && dashboardSection.classList.contains('active')) {
             console.log('Auto-refreshing dashboard...');
@@ -135,17 +143,32 @@ async function loadDatabaseStats() {
         const formatShortDate = (date) => {
             if (!date) return '--';
             const now = new Date();
-            const isToday = date.toDateString() === now.toDateString();
+
+            // Convert dates to user's timezone for comparison
+            const dateInUserTZ = date.toLocaleDateString('en-US', { timeZone: userTimezone });
+            const nowInUserTZ = now.toLocaleDateString('en-US', { timeZone: userTimezone });
+
             const yesterday = new Date(now);
             yesterday.setDate(yesterday.getDate() - 1);
-            const isYesterday = date.toDateString() === yesterday.toDateString();
+            const yesterdayInUserTZ = yesterday.toLocaleDateString('en-US', { timeZone: userTimezone });
+
+            const isToday = dateInUserTZ === nowInUserTZ;
+            const isYesterday = dateInUserTZ === yesterdayInUserTZ;
 
             if (isToday) {
-                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZone: userTimezone
+                });
             } else if (isYesterday) {
                 return 'Yesterday';
             } else {
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    timeZone: userTimezone
+                });
             }
         };
 
@@ -207,7 +230,8 @@ async function loadAllCharts() {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZone: userTimezone
             });
         });
 
@@ -698,7 +722,7 @@ function displayImportResults(results) {
         <ul>
             <li><strong>Total Rows:</strong> ${results.total_rows}</li>
             <li><strong>Imported:</strong> ${results.imported}</li>
-            <li><strong>Duplicates:</strong> ${results.duplicates}</li>
+            <li><strong>Updated:</strong> ${results.updated}</li>
             <li><strong>Errors:</strong> ${results.errors}</li>
         </ul>
     `;
@@ -1086,7 +1110,7 @@ function displayExplorerResults(readings) {
 
     summary.innerHTML = `
         <p><strong>Total Readings:</strong> ${readings.length}</p>
-        <p><strong>Date Range:</strong> ${firstReading.toLocaleString()} to ${lastReading.toLocaleString()}</p>
+        <p><strong>Date Range:</strong> ${firstReading.toLocaleString('en-US', { timeZone: userTimezone })} to ${lastReading.toLocaleString('en-US', { timeZone: userTimezone })}</p>
     `;
 
     // Create table
@@ -1141,7 +1165,7 @@ function displayExplorerResults(readings) {
     readings.forEach(reading => {
         const row = document.createElement('tr');
         const cells = [
-            new Date(reading.timestamp).toLocaleString(),
+            new Date(reading.timestamp).toLocaleString('en-US', { timeZone: userTimezone }),
             reading.outdoor_temp_f?.toFixed(1) || '-',
             reading.humidity_pct || '-',
             reading.feels_like_f?.toFixed(1) || '-',
@@ -2226,7 +2250,11 @@ async function updateSparklines() {
         // Create labels from timestamps
         const labels = readings.map(r => {
             const date = new Date(r.timestamp);
-            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            return date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZone: userTimezone
+            });
         });
 
         // Solar & UV dual chart (reversed: current on right, past on left)

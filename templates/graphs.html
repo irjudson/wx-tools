@@ -1,23 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Graphs & Analysis</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
-    <link rel="stylesheet" href="/static/css/style.css?v=2.9">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <!-- Sidebar Navigation (same as main dashboard) -->
-        <aside class="sidebar">
-            <div class="logo">
-                <h1>Weather Station</h1>
-            </div>
-            <nav class="nav-menu">
+{% extends "base.html" %}
+
+{% block title %}Graphs & Analysis - Weather Station{% endblock %}
+
+{% block nav_menu %}
                 <a href="/" class="nav-item">
                     <span class="nav-icon">&#128200;</span>
                     Dashboard
@@ -26,93 +11,96 @@
                     <span class="nav-icon">&#128202;</span>
                     Graphs & Analysis
                 </a>
-                <a href="/#import" class="nav-item">
+                <a href="/" class="nav-item" data-target-section="import">
                     <span class="nav-icon">&#128206;</span>
                     Import Data
                 </a>
-                <a href="/#analysis" class="nav-item">
+                <a href="/" class="nav-item" data-target-section="analysis">
                     <span class="nav-icon">&#9889;</span>
                     Energy Analysis
                 </a>
-                <a href="/#explorer" class="nav-item">
+                <a href="/" class="nav-item" data-target-section="explorer">
                     <span class="nav-icon">&#128269;</span>
                     Data Explorer
                 </a>
-                <a href="/#settings" class="nav-item">
+                <a href="/" class="nav-item" data-target-section="settings">
                     <span class="nav-icon">&#9881;</span>
                     Settings
                 </a>
-            </nav>
-        </aside>
+{% endblock %}
 
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <!-- Fixed Header with Date Range Filter -->
-            <div class="graphs-header">
-                <h2>Graphs & Analysis</h2>
-                <div class="date-range-controls">
-                    <button id="date-filter-toggle" class="btn btn-secondary" aria-expanded="false" aria-controls="date-filter-dropdown">
-                        <span id="current-range-label">Past 7 Days</span>
-                        <span>▼</span>
-                    </button>
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+{% endblock %}
 
-                    <!-- Date Range Dropdown (hidden by default) -->
-                    <div id="date-filter-dropdown" class="date-filter-dropdown" role="dialog" aria-labelledby="date-filter-toggle" style="display: none;">
-                        <div class="filter-content">
-                            <!-- Left: Date Pickers -->
-                            <div class="date-pickers">
-                                <div class="date-input-group">
-                                    <label for="start-date">From:</label>
-                                    <input type="datetime-local" id="start-date" class="date-input">
-                                </div>
-                                <div class="date-input-group">
-                                    <label for="end-date">To:</label>
-                                    <input type="datetime-local" id="end-date" class="date-input">
-                                </div>
-                                <div class="filter-actions">
-                                    <button id="apply-custom-range" class="btn btn-primary">Apply</button>
-                                </div>
-                            </div>
+{% block content %}
+    <!-- Fixed Header with Date Range Filter -->
+    <div class="graphs-header">
+        <h2>Graphs & Analysis</h2>
+        <div class="date-range-controls">
+            <button id="date-filter-toggle" class="btn btn-secondary" aria-expanded="false" aria-controls="date-filter-dropdown">
+                <span id="current-range-label">Last 24 Hours</span>
+                <span>▼</span>
+            </button>
 
-                            <!-- Right: Preset Buttons -->
-                            <div class="preset-buttons">
-                                <button class="preset-btn" data-preset="24h">Last 24 Hours</button>
-                                <button class="preset-btn active" data-preset="7d">Past 7 Days</button>
-                                <button class="preset-btn" data-preset="30d">Past 30 Days</button>
-                                <button class="preset-btn" data-preset="90d">Past 90 Days</button>
-                                <button class="preset-btn" data-preset="1y">Past Year</button>
-                                <button class="preset-btn" data-preset="ytd">Year to Date</button>
-                                <button class="preset-btn" data-preset="custom">Custom</button>
-                            </div>
+            <!-- Date Range Dropdown (hidden by default) -->
+            <div id="date-filter-dropdown" class="date-filter-dropdown" role="dialog" aria-labelledby="date-filter-toggle" style="display: none;">
+                <div class="filter-content">
+                    <!-- Left: Date Pickers -->
+                    <div class="date-pickers">
+                        <div class="date-input-group">
+                            <label for="start-date">From:</label>
+                            <input type="datetime-local" id="start-date" class="date-input">
+                        </div>
+                        <div class="date-input-group">
+                            <label for="end-date">To:</label>
+                            <input type="datetime-local" id="end-date" class="date-input">
+                        </div>
+                        <div class="filter-actions">
+                            <button id="apply-custom-range" class="btn btn-primary">Apply</button>
                         </div>
                     </div>
+
+                    <!-- Right: Preset Buttons -->
+                    <div class="preset-buttons">
+                        <button class="preset-btn active" data-preset="24h">Last 24 Hours</button>
+                        <button class="preset-btn" data-preset="7d">Past 7 Days</button>
+                        <button class="preset-btn" data-preset="30d">Past 30 Days</button>
+                        <button class="preset-btn" data-preset="90d">Past 90 Days</button>
+                        <button class="preset-btn" data-preset="1y">Past Year</button>
+                        <button class="preset-btn" data-preset="ytd">Year to Date</button>
+                        <button class="preset-btn" data-preset="custom">Custom</button>
+                    </div>
                 </div>
-
-                <!-- Reset Zoom Button (hidden by default) -->
-                <button id="reset-zoom-btn" class="btn btn-secondary" style="display: none;">
-                    Reset Zoom
-                </button>
             </div>
+        </div>
 
-            <!-- Loading State -->
-            <div id="loading-state" class="loading-overlay" role="status" aria-live="polite" style="display: none;">
-                <div class="spinner"></div>
-                <p>Loading weather data...</p>
-            </div>
-
-            <!-- Error State -->
-            <div id="error-state" class="error-banner" role="alert" aria-live="assertive" style="display: none;">
-                <p id="error-message">Failed to load weather data</p>
-                <button id="error-retry" class="btn btn-primary">Retry</button>
-            </div>
-
-            <!-- Chart Sections -->
-            <div id="charts-container" class="charts-container">
-                <!-- Charts will be dynamically created here -->
-            </div>
-        </main>
+        <!-- Reset Zoom Button (hidden by default) -->
+        <button id="reset-zoom-btn" class="btn btn-secondary" style="display: none;">
+            Reset Zoom
+        </button>
     </div>
 
-    <script src="/static/js/graphs.js?v=3.0"></script>
-</body>
-</html>
+    <!-- Loading State -->
+    <div id="loading-state" class="loading-overlay" role="status" aria-live="polite" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading weather data...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="error-banner" role="alert" aria-live="assertive" style="display: none;">
+        <p id="error-message">Failed to load weather data</p>
+        <button id="error-retry" class="btn btn-primary">Retry</button>
+    </div>
+
+    <!-- Chart Sections -->
+    <div id="charts-container" class="charts-container">
+        <!-- Charts will be dynamically created here -->
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/graphs.js?v=3.3"></script>
+{% endblock %}

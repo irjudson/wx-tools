@@ -1,10 +1,10 @@
 import csv
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import insert
 from src.models import WeatherReading
 from dateutil import parser
 
@@ -71,7 +71,11 @@ def parse_csv_file(csv_path: Path) -> List[Dict]:
                         # C3: Parse timestamp with error handling
                         if db_field == "timestamp":
                             try:
-                                normalized[db_field] = parser.parse(value)
+                                dt = parser.parse(value)
+                                # Convert to UTC and store as naive (SQLite compatibility)
+                                if dt.tzinfo is not None:
+                                    dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+                                normalized[db_field] = dt
                             except (ValueError, parser.ParserError) as e:
                                 logger.warning(f"Invalid timestamp format: {value}")
                                 continue  # Skip this row
@@ -109,29 +113,37 @@ def import_csv_data(csv_path: Path, db: Optional[Session]) -> Dict[str, int]:
         # Return early for testing without db
         return {"total_rows": len(readings), "imported": 0, "duplicates": 0, "errors": 0}
 
-    imported = 0
-    duplicates = 0
+    inserted = 0
+    updated = 0
     errors = 0
 
     # I2: Add transaction rollback on error
     try:
-        # Batch insert with conflict handling
+        # Batch insert/update with conflict handling
         for reading in readings:
             try:
-                stmt = insert(WeatherReading).values(**reading)
-                stmt = stmt.on_conflict_do_nothing(index_elements=['timestamp'])
-                result = db.execute(stmt)
+                # Check if record exists
+                existing = db.query(WeatherReading).filter(
+                    WeatherReading.timestamp == reading['timestamp']
+                ).first()
 
-                if result.rowcount > 0:
-                    imported += 1
+                if existing:
+                    # Update existing record
+                    for key, value in reading.items():
+                        if key != 'timestamp':  # Don't update the primary key
+                            setattr(existing, key, value)
+                    updated += 1
                 else:
-                    duplicates += 1
+                    # Insert new record
+                    new_reading = WeatherReading(**reading)
+                    db.add(new_reading)
+                    inserted += 1
             except Exception as e:
                 logger.error(f"Error importing row: {e}")
                 errors += 1
 
         db.commit()
-        logger.info(f"Import complete: {imported} imported, {duplicates} duplicates, {errors} errors")
+        logger.info(f"Import complete: {inserted} inserted, {updated} updated, {errors} errors")
     except Exception as e:
         db.rollback()
         logger.error(f"Import failed, rolling back: {e}")
@@ -139,7 +151,7 @@ def import_csv_data(csv_path: Path, db: Optional[Session]) -> Dict[str, int]:
 
     return {
         "total_rows": len(readings),
-        "imported": imported,
-        "duplicates": duplicates,
+        "imported": inserted,
+        "updated": updated,
         "errors": errors
     }

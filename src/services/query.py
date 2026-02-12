@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -43,9 +43,18 @@ def get_database_stats(db: Session) -> dict:
     if first and last:
         coverage_days = (last - first).days
 
+    # Convert naive datetimes to UTC-aware before isoformat
+    # SQLite stores as naive, but we treat them as UTC
+    def to_utc_iso(dt):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
     return {
         "total_readings": total or 0,
-        "first_reading": first.isoformat() if first else None,
-        "last_reading": last.isoformat() if last else None,
+        "first_reading": to_utc_iso(first),
+        "last_reading": to_utc_iso(last),
         "coverage_days": coverage_days
     }

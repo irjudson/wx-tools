@@ -1,48 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Station Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
-    <link rel="stylesheet" href="/static/css/style.css?v=3.7">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="logo">
-                <h1>Weather Station</h1>
-            </div>
+{% extends "base.html" %}
 
-            <!-- Station Statistics -->
-            <div class="station-stats glass">
-                <div class="stats-header">
-                    <span class="stats-icon">📊</span>
-                    <h3>Station Statistics</h3>
-                </div>
-                <div id="database-stats" class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value">--</div>
-                        <div class="stat-label">Last Reading</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">--</div>
-                        <div class="stat-label">Coverage</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">--</div>
-                        <div class="stat-label">First Reading</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">--</div>
-                        <div class="stat-label">Total Readings</div>
-                    </div>
-                </div>
-            </div>
+{% block title %}Weather Station Dashboard{% endblock %}
 
-            <nav class="nav-menu">
+{% block nav_menu %}
                 <a href="#" class="nav-item active" data-section="dashboard">
                     <span class="nav-icon">&#128200;</span>
                     Dashboard
@@ -67,11 +27,9 @@
                     <span class="nav-icon">&#9881;</span>
                     Settings
                 </a>
-            </nav>
-        </aside>
+{% endblock %}
 
-        <!-- Main Content Area -->
-        <main class="main-content">
+{% block content %}
             <!-- Dashboard Section -->
             <section id="dashboard" class="content-section active">
                 <h2>Current Conditions</h2>
@@ -712,9 +670,8 @@
                     <div id="settings-status" class="status-message"></div>
                 </div>
             </section>
-        </main>
-    </div>
+{% endblock %}
 
-    <script src="/static/js/app.js?v=3.7"></script>
-</body>
-</html>
+{% block scripts %}
+    <script src="/static/js/app.js?v=4.2"></script>
+{% endblock %}

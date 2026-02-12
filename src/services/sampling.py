@@ -193,6 +193,10 @@ def get_sampled_readings(
         else:
             bucket_dt = row.bucket_time
 
+        # Ensure bucket_dt is UTC-aware (SQLite stores as naive, but we treat as UTC)
+        if bucket_dt and bucket_dt.tzinfo is None:
+            bucket_dt = bucket_dt.replace(tzinfo=timezone.utc)
+
         reading = {
             'timestamp': bucket_dt.isoformat() if bucket_dt else None,
             'outdoor_temp_f': float(row.outdoor_temp_f) if row.outdoor_temp_f is not None else None,

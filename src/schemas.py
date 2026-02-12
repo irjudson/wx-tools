@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from pydantic import BaseModel, ConfigDict, field_serializer
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 
@@ -82,6 +82,13 @@ class WeatherReadingResponse(BaseModel):
     sensor1_battery: Optional[int]
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('timestamp')
+    def serialize_timestamp(self, dt: datetime, _info):
+        """Ensure timestamp is UTC-aware before serialization"""
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
 
 
 class ImportPathRequest(BaseModel):

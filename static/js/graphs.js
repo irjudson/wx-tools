@@ -5,11 +5,12 @@
 let currentDateRange = {
     start: null,
     end: null,
-    preset: 'all'
+    preset: '24h'
 };
 
 let charts = {}; // Will store Chart.js instances
 let zoomState = {}; // Track zoom state per chart
+let userTimezone = 'America/Denver'; // Default timezone, will be loaded from settings
 
 // Chart sections configuration
 const CHART_SECTIONS = [
@@ -90,7 +91,9 @@ const CHART_SECTIONS = [
 ];
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadTimezoneSettings();
+    loadDatabaseStats(); // Load sidebar stats
     initializeDateRange();
     setupEventListeners();
     loadDataAndRenderCharts();
@@ -99,7 +102,107 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.hash) {
         handleHashNavigation();
     }
+
+    // Auto-refresh stats every 60 seconds
+    setInterval(() => {
+        loadDatabaseStats();
+    }, 60000);
 });
+
+// Load timezone setting from API
+async function loadTimezoneSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.timezone) {
+                userTimezone = data.timezone;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load timezone settings:', error);
+        // Keep default timezone
+    }
+}
+
+// Load database statistics for sidebar
+async function loadDatabaseStats() {
+    const container = document.getElementById('database-stats');
+    if (!container) return; // Exit if stats container doesn't exist
+
+    try {
+        const response = await fetch('/api/weather/stats');
+
+        if (!response.ok) {
+            throw new Error('Failed to load stats');
+        }
+
+        const data = await response.json();
+
+        // Format dates
+        const firstDate = data.first_reading ? new Date(data.first_reading) : null;
+        const lastDate = data.last_reading ? new Date(data.last_reading) : null;
+
+        const formatShortDate = (date) => {
+            if (!date) return '--';
+            const now = new Date();
+
+            // Convert dates to user's timezone for comparison
+            const dateInUserTZ = date.toLocaleDateString('en-US', { timeZone: userTimezone });
+            const nowInUserTZ = now.toLocaleDateString('en-US', { timeZone: userTimezone });
+
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayInUserTZ = yesterday.toLocaleDateString('en-US', { timeZone: userTimezone });
+
+            const isToday = dateInUserTZ === nowInUserTZ;
+            const isYesterday = dateInUserTZ === yesterdayInUserTZ;
+
+            if (isToday) {
+                return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZone: userTimezone
+                });
+            } else if (isYesterday) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    timeZone: userTimezone
+                });
+            }
+        };
+
+        container.innerHTML = `
+            <div class="stat-item">
+                <div class="stat-value">${formatShortDate(lastDate)}</div>
+                <div class="stat-label">Last Reading</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${data.coverage_days !== null ? Math.round(data.coverage_days) + ' days' : '--'}</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${formatShortDate(firstDate)}</div>
+                <div class="stat-label">First Reading</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${data.total_readings.toLocaleString()}</div>
+                <div class="stat-label">Total Readings</div>
+            </div>
+        `;
+    } catch (error) {
+        container.innerHTML = `
+            <div class="stat-item" style="grid-column: 1 / -1;">
+                <div class="stat-value error">Error</div>
+                <div class="stat-label">Failed to load statistics</div>
+            </div>
+        `;
+        console.error('Failed to load database stats:', error);
+    }
+}
 
 // Initialize date range from URL params or default to past 7 days
 function initializeDateRange() {
@@ -136,8 +239,8 @@ function initializeDateRange() {
         updatePresetButtons('custom');
         updateRangeLabel();
     } else {
-        // Default to all time to show historical data
-        applyPreset('all');
+        // Default to last 24 hours
+        applyPreset('24h');
     }
 }
 
@@ -316,8 +419,8 @@ function updateRangeLabel(labelText) {
         // Use provided label text (from applyPreset)
         label.textContent = labelText;
     } else if (currentDateRange.preset === 'custom') {
-        const startStr = currentDateRange.start.toLocaleDateString();
-        const endStr = currentDateRange.end.toLocaleDateString();
+        const startStr = currentDateRange.start.toLocaleDateString('en-US', { timeZone: userTimezone });
+        const endStr = currentDateRange.end.toLocaleDateString('en-US', { timeZone: userTimezone });
         label.textContent = `${startStr} - ${endStr}`;
     } else {
         // Use preset label
@@ -627,7 +730,13 @@ function createChart(canvas, config, readings) {
                     bodyFont: { size: 13 },
                     callbacks: {
                         title: function(tooltipItems) {
-                            return new Date(tooltipItems[0].parsed.x).toLocaleString();
+                            return new Date(tooltipItems[0].parsed.x).toLocaleString('en-US', {
+                                timeZone: userTimezone,
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
                         }
                     }
                 },
