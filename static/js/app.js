@@ -78,8 +78,36 @@ async function loadDashboard() {
     ]);
 }
 
-// Auto-refresh dashboard every minute
+// Auto-refresh dashboard - poll for new data intelligently
 let dashboardRefreshInterval = null;
+let lastKnownTimestamp = null;
+
+async function checkForNewData() {
+    try {
+        const response = await fetch('/api/weather/latest');
+        if (!response.ok) return false;
+
+        const data = await response.json();
+        const currentTimestamp = data.timestamp;
+
+        // First time - store the timestamp
+        if (lastKnownTimestamp === null) {
+            lastKnownTimestamp = currentTimestamp;
+            return false;
+        }
+
+        // Check if new data arrived
+        if (currentTimestamp !== lastKnownTimestamp) {
+            lastKnownTimestamp = currentTimestamp;
+            return true; // New data detected
+        }
+
+        return false; // No new data
+    } catch (error) {
+        console.error('Failed to check for new data:', error);
+        return false;
+    }
+}
 
 function startDashboardAutoRefresh() {
     // Clear any existing interval
@@ -87,18 +115,22 @@ function startDashboardAutoRefresh() {
         clearInterval(dashboardRefreshInterval);
     }
 
-    // Refresh every 60 seconds
-    dashboardRefreshInterval = setInterval(() => {
+    // Poll for new data every 15 seconds
+    dashboardRefreshInterval = setInterval(async () => {
         // Always refresh stats (visible on all pages in sidebar)
         loadDatabaseStats();
 
-        // Only refresh dashboard content if dashboard is active
+        // Only check dashboard content if dashboard is active
         const dashboardSection = document.getElementById('dashboard');
         if (dashboardSection && dashboardSection.classList.contains('active')) {
-            console.log('Auto-refreshing dashboard...');
-            loadDashboard();
+            // Check if new data arrived
+            const hasNewData = await checkForNewData();
+            if (hasNewData) {
+                console.log('New data detected - refreshing dashboard...');
+                loadDashboard();
+            }
         }
-    }, 60000); // 60 seconds
+    }, 15000); // Check every 15 seconds
 }
 
 function stopDashboardAutoRefresh() {
@@ -106,6 +138,7 @@ function stopDashboardAutoRefresh() {
         clearInterval(dashboardRefreshInterval);
         dashboardRefreshInterval = null;
     }
+    lastKnownTimestamp = null;
 }
 
 async function loadLatestReading() {
@@ -172,24 +205,40 @@ async function loadDatabaseStats() {
             }
         };
 
-        container.innerHTML = `
-            <div class="stat-item">
-                <div class="stat-value">${formatShortDate(lastDate)}</div>
-                <div class="stat-label">Last Reading</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">${data.coverage_days !== null ? Math.round(data.coverage_days) + ' days' : '--'}</div>
-                <div class="stat-label">Coverage</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">${formatShortDate(firstDate)}</div>
-                <div class="stat-label">First Reading</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">${data.total_readings.toLocaleString()}</div>
-                <div class="stat-label">Total Readings</div>
-            </div>
-        `;
+        const newStats = {
+            lastReading: formatShortDate(lastDate),
+            coverage: data.coverage_days !== null ? Math.round(data.coverage_days) + ' days' : '--',
+            firstReading: formatShortDate(firstDate),
+            totalReadings: data.total_readings.toLocaleString()
+        };
+
+        // Only create HTML structure if it doesn't exist
+        if (!container.querySelector('.stat-value[data-stat]')) {
+            container.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value" data-stat="lastReading">${newStats.lastReading}</div>
+                    <div class="stat-label">Last Reading</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" data-stat="coverage">${newStats.coverage}</div>
+                    <div class="stat-label">Coverage</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" data-stat="firstReading">${newStats.firstReading}</div>
+                    <div class="stat-label">First Reading</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" data-stat="totalReadings">${newStats.totalReadings}</div>
+                    <div class="stat-label">Total Readings</div>
+                </div>
+            `;
+        } else {
+            // Update only changed values smoothly
+            updateStatValueIfChanged('lastReading', newStats.lastReading);
+            updateStatValueIfChanged('coverage', newStats.coverage);
+            updateStatValueIfChanged('firstReading', newStats.firstReading);
+            updateStatValueIfChanged('totalReadings', newStats.totalReadings);
+        }
     } catch (error) {
         container.innerHTML = `
             <div class="stat-item" style="grid-column: 1 / -1;">
@@ -198,6 +247,21 @@ async function loadDatabaseStats() {
             </div>
         `;
         console.error('Failed to load database stats:', error);
+    }
+}
+
+// Helper function to smoothly update a single stat value
+function updateStatValueIfChanged(statName, newValue) {
+    const element = document.querySelector(`[data-stat="${statName}"]`);
+    if (element && element.textContent !== newValue) {
+        // Add smooth fade transition
+        element.style.transition = 'opacity 0.3s ease-in-out';
+        element.style.opacity = '0.4';
+
+        setTimeout(() => {
+            element.textContent = newValue;
+            element.style.opacity = '1';
+        }, 150);
     }
 }
 
@@ -472,11 +536,6 @@ function createCardChart(chartKey, canvasId, config) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    // Destroy existing chart if present
-    if (charts[chartKey]) {
-        charts[chartKey].destroy();
-    }
-
     // Prepare datasets - support both single and multiple datasets
     let datasets;
     if (config.datasets) {
@@ -503,6 +562,15 @@ function createCardChart(chartKey, canvasId, config) {
             pointRadius: 0,
             pointHoverRadius: 3
         }];
+    }
+
+    // Update existing chart if present, otherwise create new one
+    if (charts[chartKey]) {
+        // Update chart data smoothly
+        charts[chartKey].data.labels = config.labels || [];
+        charts[chartKey].data.datasets = datasets;
+        charts[chartKey].update('none'); // 'none' mode = no animation for instant update
+        return;
     }
 
     charts[chartKey] = new Chart(ctx.getContext('2d'), {
@@ -567,11 +635,6 @@ function createOrUpdateChart(chartKey, canvasId, config, labels) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    // Destroy existing chart if present
-    if (charts[chartKey]) {
-        charts[chartKey].destroy();
-    }
-
     // Support both single dataset (config.data) and multiple datasets (config.datasets)
     let datasets;
     if (config.datasets) {
@@ -601,6 +664,15 @@ function createOrUpdateChart(chartKey, canvasId, config, labels) {
             pointRadius: 0,
             pointHoverRadius: 4
         }];
+    }
+
+    // Update existing chart if present, otherwise create new one
+    if (charts[chartKey]) {
+        // Update chart data smoothly
+        charts[chartKey].data.labels = labels;
+        charts[chartKey].data.datasets = datasets;
+        charts[chartKey].update('none'); // 'none' mode = no animation for instant update
+        return;
     }
 
     charts[chartKey] = new Chart(ctx.getContext('2d'), {
