@@ -277,8 +277,8 @@ function applyPreset(preset) {
             updateRangeLabel('Year to Date');
             break;
         case 'all':
-            // Show all available data - use a very old start date
-            start.setFullYear(2020, 0, 1);
+            // Show all available data - go back 3 years to capture historical imports
+            start.setFullYear(start.getFullYear() - 3, 0, 1);
             start.setHours(0, 0, 0, 0);
             updateRangeLabel('All Time');
             break;

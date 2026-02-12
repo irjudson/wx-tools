@@ -118,8 +118,8 @@ def get_sampled_readings(
     if start >= end:
         raise ValueError("Start date must be before end date")
 
-    if (end - start).days > 730:
-        raise ValueError("Date range too large, maximum 2 years")
+    if (end - start).days > 1825:
+        raise ValueError("Date range too large, maximum 5 years")
 
     # Check for future dates
     now = datetime.now(timezone.utc)
