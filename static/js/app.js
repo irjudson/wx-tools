@@ -23,8 +23,17 @@ function initializeNavigation() {
 
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
-            e.preventDefault();
             const targetSection = item.getAttribute('data-section');
+            const href = item.getAttribute('href');
+
+            // If link has a real href (not # or empty), allow default navigation
+            if (href && href !== '#' && !href.startsWith('#')) {
+                // Let the browser handle the navigation
+                return;
+            }
+
+            // Otherwise, handle single-page navigation
+            e.preventDefault();
 
             // Update active nav item
             navItems.forEach(nav => nav.classList.remove('active'));
