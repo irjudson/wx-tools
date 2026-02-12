@@ -5,7 +5,7 @@
 let currentDateRange = {
     start: null,
     end: null,
-    preset: '7d'
+    preset: 'all'
 };
 
 let charts = {}; // Will store Chart.js instances
@@ -136,8 +136,8 @@ function initializeDateRange() {
         updatePresetButtons('custom');
         updateRangeLabel();
     } else {
-        // Default to past 7 days
-        applyPreset('7d');
+        // Default to all time to show historical data
+        applyPreset('all');
     }
 }
 
@@ -275,6 +275,12 @@ function applyPreset(preset) {
             start.setMonth(0, 1);
             start.setHours(0, 0, 0, 0);
             updateRangeLabel('Year to Date');
+            break;
+        case 'all':
+            // Show all available data - use a very old start date
+            start.setFullYear(2020, 0, 1);
+            start.setHours(0, 0, 0, 0);
+            updateRangeLabel('All Time');
             break;
     }
 

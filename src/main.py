@@ -12,6 +12,7 @@ import tempfile
 import shutil
 import logging
 import secrets
+import asyncio
 from urllib.parse import unquote, parse_qs
 from src.config import get_settings
 from src.database import get_db, SessionLocal
@@ -30,14 +31,52 @@ settings = get_settings()
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
-# Global MQTT publisher instance
+# Global MQTT publisher instance and monitoring task
 mqtt_publisher: Optional[MQTTPublisher] = None
+monitoring_task: Optional[asyncio.Task] = None
+
+
+async def monitor_data_freshness():
+    """Background task to monitor data freshness and log alerts"""
+    from datetime import datetime, timezone, timedelta
+
+    while True:
+        try:
+            await asyncio.sleep(300)  # Check every 5 minutes
+
+            db = SessionLocal()
+            try:
+                latest = get_latest_reading(db)
+                if latest:
+                    now = datetime.now(timezone.utc)
+                    latest_time = latest.timestamp
+
+                    if latest_time.tzinfo is None:
+                        latest_time = latest_time.replace(tzinfo=timezone.utc)
+
+                    time_diff = now - latest_time
+
+                    if time_diff > timedelta(hours=1):
+                        hours_ago = time_diff.total_seconds() / 3600
+                        logger.error(f"ALERT: Weather data collection has stopped! Last reading was {hours_ago:.1f} hours ago")
+                    elif time_diff > timedelta(minutes=15):
+                        minutes_ago = time_diff.total_seconds() / 60
+                        logger.warning(f"WARNING: Weather data may be stale. Last reading was {minutes_ago:.1f} minutes ago")
+                else:
+                    logger.error("ALERT: No weather data found in database")
+            finally:
+                db.close()
+        except asyncio.CancelledError:
+            logger.info("Data freshness monitoring task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Error in data freshness monitoring: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan - startup and shutdown"""
-    global mqtt_publisher
+    global mqtt_publisher, monitoring_task
 
     # Startup: Initialize MQTT publisher
     logger.info("Starting Weather Station Service v1.0.0")
@@ -58,7 +97,20 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize MQTT publisher: {e}")
         mqtt_publisher = None
 
+    # Start data freshness monitoring
+    logger.info("Starting data freshness monitoring (checking every 5 minutes)")
+    monitoring_task = asyncio.create_task(monitor_data_freshness())
+
     yield
+
+    # Shutdown: Stop monitoring task
+    if monitoring_task:
+        logger.info("Stopping data freshness monitoring")
+        monitoring_task.cancel()
+        try:
+            await monitoring_task
+        except asyncio.CancelledError:
+            pass
 
     # Shutdown: Disconnect MQTT publisher
     if mqtt_publisher:
@@ -93,13 +145,54 @@ templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/api/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
+async def health_check(db: Session = Depends(get_db)):
+    """Health check endpoint with data freshness monitoring"""
+    from datetime import datetime, timezone, timedelta
+
+    health_status = {
         "status": "healthy",
-        "database": "not_checked",
-        "mqtt": "not_configured"
+        "database": "connected",
+        "mqtt": "not_configured" if mqtt_publisher is None else "connected",
+        "data_freshness": "unknown"
     }
+
+    try:
+        # Check if we have recent data (within last 5 minutes)
+        latest = get_latest_reading(db)
+        if latest:
+            now = datetime.now(timezone.utc)
+            latest_time = latest.timestamp
+
+            # Make timezone-aware if needed
+            if latest_time.tzinfo is None:
+                latest_time = latest_time.replace(tzinfo=timezone.utc)
+
+            time_diff = now - latest_time
+
+            if time_diff < timedelta(minutes=5):
+                health_status["data_freshness"] = "current"
+                health_status["last_reading_seconds_ago"] = int(time_diff.total_seconds())
+            elif time_diff < timedelta(hours=1):
+                health_status["data_freshness"] = "stale"
+                health_status["last_reading_seconds_ago"] = int(time_diff.total_seconds())
+                health_status["status"] = "degraded"
+                logger.warning(f"Weather data is stale: last reading {time_diff.total_seconds():.0f} seconds ago")
+            else:
+                health_status["data_freshness"] = "very_stale"
+                health_status["last_reading_seconds_ago"] = int(time_diff.total_seconds())
+                health_status["status"] = "degraded"
+                logger.error(f"Weather data is very stale: last reading {time_diff.total_seconds():.0f} seconds ago")
+        else:
+            health_status["data_freshness"] = "no_data"
+            health_status["status"] = "degraded"
+            logger.warning("No weather readings found in database")
+
+    except Exception as e:
+        logger.error(f"Health check database query failed: {e}")
+        health_status["database"] = "error"
+        health_status["status"] = "unhealthy"
+
+    return health_status
 
 
 async def _process_weather_upload(
@@ -437,6 +530,59 @@ async def query_sampled_readings(
 async def database_stats(db: Session = Depends(get_db)):
     """Get database statistics"""
     return get_database_stats(db)
+
+
+@app.get("/api/monitoring/data-freshness")
+async def data_freshness_check(db: Session = Depends(get_db)):
+    """Check data collection freshness and provide alerts"""
+    from datetime import datetime, timezone, timedelta
+
+    latest = get_latest_reading(db)
+    if not latest:
+        return {
+            "status": "error",
+            "message": "No data found in database",
+            "alert_level": "critical"
+        }
+
+    now = datetime.now(timezone.utc)
+    latest_time = latest.timestamp
+
+    # Make timezone-aware if needed
+    if latest_time.tzinfo is None:
+        latest_time = latest_time.replace(tzinfo=timezone.utc)
+
+    time_diff = now - latest_time
+    seconds_ago = int(time_diff.total_seconds())
+
+    # Determine alert level
+    if time_diff < timedelta(minutes=5):
+        alert_level = "ok"
+        status = "healthy"
+        message = "Data collection is current"
+    elif time_diff < timedelta(minutes=15):
+        alert_level = "warning"
+        status = "stale"
+        message = f"Data is {seconds_ago // 60} minutes old - possible collection issue"
+    elif time_diff < timedelta(hours=1):
+        alert_level = "error"
+        status = "stale"
+        message = f"Data is {seconds_ago // 60} minutes old - data collection may have stopped"
+    else:
+        alert_level = "critical"
+        status = "very_stale"
+        hours_ago = seconds_ago // 3600
+        message = f"Data is {hours_ago} hours old - data collection has stopped"
+
+    return {
+        "status": status,
+        "alert_level": alert_level,
+        "message": message,
+        "last_reading": latest.timestamp.isoformat(),
+        "seconds_since_last_reading": seconds_ago,
+        "current_temp_f": latest.outdoor_temp_f,
+        "current_humidity_pct": latest.humidity_pct
+    }
 
 
 @app.get("/api/weather/export")
