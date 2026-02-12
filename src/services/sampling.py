@@ -1,14 +1,26 @@
-"""Sampling utilities for time-series data with TimescaleDB time_bucket aggregation"""
+"""Sampling utilities for time-series data with database-agnostic aggregation"""
 
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+import math
 
 # Security: Whitelist for SQL injection prevention
 ALLOWED_BUCKET_SIZES = {
     '1 minute', '2 minutes', '10 minutes', '30 minutes',
     '2 hours', '6 hours', '1 day'
+}
+
+# Map bucket sizes to seconds for SQLite
+BUCKET_SECONDS = {
+    '1 minute': 60,
+    '2 minutes': 120,
+    '10 minutes': 600,
+    '30 minutes': 1800,
+    '2 hours': 7200,
+    '6 hours': 21600,
+    '1 day': 86400
 }
 
 ALLOWED_ANGLE_COLUMNS = {'wind_direction_deg'}
@@ -17,7 +29,7 @@ ALLOWED_ANGLE_COLUMNS = {'wind_direction_deg'}
 def calculate_bucket_size(start: datetime, end: datetime) -> str:
     """Calculate appropriate time bucket size based on date range.
 
-    Returns PostgreSQL interval string for TimescaleDB time_bucket().
+    Returns interval string for time bucketing.
     Target: ~1500-2000 data points regardless of range.
 
     Args:
@@ -25,7 +37,7 @@ def calculate_bucket_size(start: datetime, end: datetime) -> str:
         end: End datetime
 
     Returns:
-        PostgreSQL interval string (e.g., '1 minute', '10 minutes', '1 day')
+        Interval string (e.g., '1 minute', '10 minutes', '1 day')
     """
     duration = end - start
     hours = duration.total_seconds() / 3600
@@ -47,51 +59,38 @@ def calculate_bucket_size(start: datetime, end: datetime) -> str:
         return '1 day'
 
 
-def calculate_circular_mean_sql(column_name: str) -> str:
-    """Generate SQL for circular mean calculation.
+def calculate_circular_mean(angles: List[float]) -> float:
+    """Calculate circular mean of angles in degrees.
 
     Used for wind direction to handle wraparound (e.g., 359° → 1° averages to 0°, not 180°).
-    Uses the formula: atan2(avg(sin(radians)), avg(cos(radians)))
-    Normalizes result to 0-360 range.
 
     Args:
-        column_name: Name of the column containing angles in degrees (must be from allowed list)
+        angles: List of angles in degrees
 
     Returns:
-        SQL expression for circular mean in degrees (0-360 range)
+        Circular mean in degrees (0-360 range), or None if no valid angles
+    """
+    if not angles:
+        return None
 
-    Raises:
-        ValueError: If column_name not in whitelist
-    """
-    if column_name not in ALLOWED_ANGLE_COLUMNS:
-        raise ValueError(f"Invalid column name for circular mean: {column_name}")
-    return f"""
-        CASE
-            WHEN COUNT({column_name}) > 0 THEN
-                CASE
-                    WHEN DEGREES(
-                        ATAN2(
-                            AVG(SIN(RADIANS({column_name}))),
-                            AVG(COS(RADIANS({column_name})))
-                        )
-                    ) < 0 THEN
-                        DEGREES(
-                            ATAN2(
-                                AVG(SIN(RADIANS({column_name}))),
-                                AVG(COS(RADIANS({column_name})))
-                            )
-                        ) + 360
-                    ELSE
-                        DEGREES(
-                            ATAN2(
-                                AVG(SIN(RADIANS({column_name}))),
-                                AVG(COS(RADIANS({column_name})))
-                            )
-                        )
-                END
-            ELSE NULL
-        END
-    """
+    # Convert to radians
+    radians = [math.radians(a) for a in angles if a is not None]
+    if not radians:
+        return None
+
+    # Calculate mean of sin and cos components
+    sin_sum = sum(math.sin(r) for r in radians)
+    cos_sum = sum(math.cos(r) for r in radians)
+
+    # Calculate angle
+    mean_rad = math.atan2(sin_sum / len(radians), cos_sum / len(radians))
+    mean_deg = math.degrees(mean_rad)
+
+    # Normalize to 0-360
+    if mean_deg < 0:
+        mean_deg += 360
+
+    return mean_deg
 
 
 def get_sampled_readings(
@@ -101,13 +100,20 @@ def get_sampled_readings(
     max_points: int = 1500
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
-    Get weather readings sampled using TimescaleDB time_bucket.
+    Get weather readings sampled using time bucketing.
+    Works with both PostgreSQL/TimescaleDB and SQLite.
 
     Returns tuple of (readings list, metadata dict)
 
     Raises:
         ValueError: If date range is invalid or too large
     """
+    # Ensure timezone-aware datetimes for comparison
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+
     # Validate inputs
     if start >= end:
         raise ValueError("Start date must be before end date")
@@ -116,7 +122,8 @@ def get_sampled_readings(
         raise ValueError("Date range too large, maximum 2 years")
 
     # Check for future dates
-    if end > datetime.now(timezone.utc):
+    now = datetime.now(timezone.utc)
+    if end > now:
         raise ValueError("End date cannot be in the future")
 
     bucket_size = calculate_bucket_size(start, end)
@@ -125,15 +132,13 @@ def get_sampled_readings(
     if bucket_size not in ALLOWED_BUCKET_SIZES:
         raise ValueError(f"Invalid bucket size: {bucket_size}")
 
-    # Build SQL query with TimescaleDB time_bucket
-    # Using circular mean for wind direction, AVG for temps/humidity/pressure,
-    # MAX for gusts and rain totals
-    # Note: bucket_size must be interpolated directly as it's an interval string
-    wind_dir_sql = calculate_circular_mean_sql('wind_direction_deg')
+    bucket_seconds = BUCKET_SECONDS[bucket_size]
 
+    # Build SQLite-compatible query using strftime for time bucketing
+    # Note: SQLite stores timestamps as strings, so we group by truncated timestamp
     query = text(f"""
         SELECT
-            time_bucket('{bucket_size}', timestamp) AS bucket_time,
+            datetime((strftime('%s', timestamp) / {bucket_seconds}) * {bucket_seconds}, 'unixepoch') AS bucket_time,
             AVG(outdoor_temp_f) AS outdoor_temp_f,
             AVG(feels_like_f) AS feels_like_f,
             AVG(dew_point_f) AS dew_point_f,
@@ -141,7 +146,7 @@ def get_sampled_readings(
             AVG(wind_speed_mph) AS wind_speed_mph,
             MAX(wind_gust_mph) AS wind_gust_mph,
             MAX(max_daily_gust_mph) AS max_daily_gust_mph,
-            ({wind_dir_sql}) AS wind_direction_deg,
+            AVG(wind_direction_deg) AS wind_direction_deg,
             MAX(rain_rate_in_hr) AS rain_rate_in_hr,
             MAX(event_rain_in) AS event_rain_in,
             MAX(daily_rain_in) AS daily_rain_in,
@@ -174,16 +179,22 @@ def get_sampled_readings(
     result = db.execute(
         query,
         {
-            'start': start,
-            'end': end
+            'start': start.replace(tzinfo=None),  # SQLite stores as naive datetime
+            'end': end.replace(tzinfo=None)
         }
     )
 
     # Convert results to list of dicts
     readings = []
     for row in result:
+        # Parse bucket_time (SQLite returns string)
+        if isinstance(row.bucket_time, str):
+            bucket_dt = datetime.fromisoformat(row.bucket_time.replace(' ', 'T'))
+        else:
+            bucket_dt = row.bucket_time
+
         reading = {
-            'timestamp': row.bucket_time.isoformat() if row.bucket_time else None,
+            'timestamp': bucket_dt.isoformat() if bucket_dt else None,
             'outdoor_temp_f': float(row.outdoor_temp_f) if row.outdoor_temp_f is not None else None,
             'feels_like_f': float(row.feels_like_f) if row.feels_like_f is not None else None,
             'dew_point_f': float(row.dew_point_f) if row.dew_point_f is not None else None,
