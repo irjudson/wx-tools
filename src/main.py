@@ -815,19 +815,28 @@ async def update_station_config(config: StationConfigRequest):
 @app.get("/", response_class=HTMLResponse)
 async def serve_vue_app():
     """Serve the Vue application's index.html"""
-    return FileResponse("frontend/dist/index.html")
+    frontend_path = Path("frontend/dist/index.html")
+    if frontend_path.exists():
+        return FileResponse(frontend_path)
+    return HTMLResponse("<html><body><h1>Weather Station API</h1><p>Frontend not built. API endpoints available at /api/</p></body></html>")
 
 
 @app.get("/graphs", response_class=HTMLResponse)
 async def graphs_page(request: Request):
     """Serve graphs & analysis page"""
-    return FileResponse("frontend/dist/index.html")
+    frontend_path = Path("frontend/dist/index.html")
+    if frontend_path.exists():
+        return FileResponse(frontend_path)
+    return HTMLResponse("<html><body><h1>Weather Station API</h1><p>Frontend not built. API endpoints available at /api/</p></body></html>")
 
 
 @app.get("/favicon.svg")
 async def favicon():
     """Serve favicon"""
-    return FileResponse("frontend/dist/favicon.svg", media_type="image/svg+xml")
+    favicon_path = Path("frontend/dist/favicon.svg")
+    if favicon_path.exists():
+        return FileResponse(favicon_path, media_type="image/svg+xml")
+    raise HTTPException(status_code=404, detail="Favicon not found")
 
 
 # Weather upload catch-all route (must be before Vue SPA catch-all)
@@ -902,4 +911,7 @@ async def catch_weather_upload(catchall: str, request: Request, db: Session = De
 @app.get("/{path:path}", response_class=HTMLResponse)
 async def serve_vue_spa(path: str):
     """Serve the Vue application for all other routes not caught above"""
-    return FileResponse("frontend/dist/index.html")
+    frontend_path = Path("frontend/dist/index.html")
+    if frontend_path.exists():
+        return FileResponse(frontend_path)
+    raise HTTPException(status_code=404, detail="Not Found")
