@@ -1,0 +1,33 @@
+// frontend/src/types/weather.d.ts
+
+export interface WeatherReading {
+  timestamp: string;
+  outdoor_temp_f: number;
+  humidity_pct: number;
+  feels_like_f: number;
+  dew_point_f: number;
+  wind_speed_mph: number;
+  wind_gust_mph: number;
+  max_daily_gust_mph: number;
+  wind_direction_deg: number;
+  relative_pressure_inhg: number;
+  absolute_pressure_inhg: number;
+  solar_radiation_wm2: number;
+  uv_index: number;
+  rain_rate_in_hr: number;
+  daily_rain_in: number;
+  event_rain_in: number;
+  weekly_rain_in: number;
+  monthly_rain_in: number;
+  yearly_rain_in: number;
+  indoor_temp_f: number;
+  indoor_humidity_pct: number;
+  indoor_feels_like_f: number;
+  indoor_dew_point_f: number;
+  temp_f_1: number;
+  humidity_1: number;
+  feels_like_1: number;
+  dew_point_1f: number;
+  battery_voltage: number;
+  battery_1: number;
+}

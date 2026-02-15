@@ -26,14 +26,14 @@
         <div class="flex items-center space-x-2">
           <span class="text-2xl">🌬️</span>
           <div class="flex flex-col">
-            <span class="block text-xl font-semibold">{{ weatherStore.latestReading.wind_speed_mph.toFixed(1) }} mph</span>
+            <span class="block text-xl font-semibold">{{ weatherStore.latestReading?.wind_speed_mph != null ? weatherStore.latestReading.wind_speed_mph.toFixed(1) : '--' }} mph</span>
             <span class="text-sm opacity-80">Wind</span>
           </div>
         </div>
         <div class="flex items-center space-x-2">
           <span class="text-2xl">🌡️</span>
           <div class="flex flex-col">
-            <span class="block text-xl font-semibold">{{ weatherStore.latestReading.relative_pressure_inhg.toFixed(2) }} inHg</span>
+            <span class="block text-xl font-semibold">{{ weatherStore.latestReading?.relative_pressure_inhg != null ? weatherStore.latestReading.relative_pressure_inhg.toFixed(2) : '--' }} inHg</span>
             <span class="text-sm opacity-80">Pressure</span>
           </div>
         </div>
@@ -153,7 +153,7 @@
           </div>
           <div>
             <span class="block text-xs uppercase text-gray-500 dark:text-gray-400">Gusts</span>
-            <span class="font-medium">{{ weatherStore.latestReading ? weatherStore.latestReading.wind_gust_mph.toFixed(1) : '--' }} mph</span>
+            <span class="font-medium">{{ weatherStore.latestReading?.wind_gust_mph != null ? weatherStore.latestReading.wind_gust_mph.toFixed(1) : '--' }} mph</span>
           </div>
         </div>
         <div class="flex justify-end">
@@ -192,28 +192,28 @@
             <div class="relative w-8 h-full bg-blue-200 dark:bg-blue-800 rounded-t-full overflow-hidden">
               <div id="rain-today-fill" class="w-full bg-blue-500 absolute bottom-0" :style="{ height: rainTodayFillHeight }"></div>
             </div>
-            <span class="mt-2 text-sm font-medium">{{ weatherStore.latestReading ? weatherStore.latestReading.daily_rain_in.toFixed(2) : '--' }}</span>
+            <span class="mt-2 text-sm font-medium">{{ weatherStore.latestReading?.daily_rain_in != null ? weatherStore.latestReading.daily_rain_in.toFixed(2) : '--' }}</span>
             <span class="text-xs text-gray-500">Today</span>
           </div>
           <div class="flex flex-col items-center">
             <div class="relative w-8 h-full bg-blue-200 dark:bg-blue-800 rounded-t-full overflow-hidden">
               <div id="rain-weekly-fill" class="w-full bg-blue-500 absolute bottom-0" :style="{ height: rainWeeklyFillHeight }"></div>
             </div>
-            <span class="mt-2 text-sm font-medium">{{ weatherStore.latestReading ? weatherStore.latestReading.weekly_rain_in.toFixed(2) : '--' }}</span>
+            <span class="mt-2 text-sm font-medium">{{ weatherStore.latestReading?.weekly_rain_in != null ? weatherStore.latestReading.weekly_rain_in.toFixed(2) : '--' }}</span>
             <span class="text-xs text-gray-500">Weekly</span>
           </div>
           <div class="flex flex-col items-center">
             <div class="relative w-8 h-full bg-blue-200 dark:bg-blue-800 rounded-t-full overflow-hidden">
               <div id="rain-monthly-fill" class="w-full bg-blue-500 absolute bottom-0" :style="{ height: rainMonthlyFillHeight }"></div>
             </div>
-            <span class="mt-2 text-sm font-medium">{{ weatherStore.latestReading ? weatherStore.latestReading.monthly_rain_in.toFixed(2) : '--' }}</span>
+            <span class="mt-2 text-sm font-medium">{{ weatherStore.latestReading?.monthly_rain_in != null ? weatherStore.latestReading.monthly_rain_in.toFixed(2) : '--' }}</span>
             <span class="text-xs text-gray-500">Monthly</span>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
           <div>
             <span class="block text-xs uppercase text-gray-500 dark:text-gray-400">Rate</span>
-            <span class="font-medium">{{ weatherStore.latestReading ? weatherStore.latestReading.rain_rate_in_hr.toFixed(2) : '--' }} in/hr</span>
+            <span class="font-medium">{{ weatherStore.latestReading?.rain_rate_in_hr != null ? weatherStore.latestReading.rain_rate_in_hr.toFixed(2) : '--' }} in/hr</span>
           </div>
           <div>
             <span class="block text-xs uppercase text-gray-500 dark:text-gray-400">Event</span>
@@ -260,7 +260,7 @@
         <div class="flex flex-col items-center mb-4">
           <div class="text-center mb-2">
             <span class="block text-xs uppercase text-gray-500 dark:text-gray-400">Solar Radiation</span>
-            <span class="text-lg font-medium">{{ weatherStore.latestReading ? weatherStore.latestReading.solar_radiation_wm2.toFixed(1) : '0.0' }} W/m²</span>
+            <span class="text-lg font-medium">{{ weatherStore.latestReading?.solar_radiation_wm2 != null ? weatherStore.latestReading.solar_radiation_wm2.toFixed(1) : '--' }} W/m²</span>
           </div>
           <div class="text-center">
             <span class="block text-xs uppercase text-gray-500 dark:text-gray-400">UV Index</span>

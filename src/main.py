@@ -1,8 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Form, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
 from datetime import datetime
@@ -138,10 +137,10 @@ app.add_middleware(
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
-# Initialize Jinja2 templates
-templates = Jinja2Templates(directory="templates")
+# Mount static files for old assets for now, will remove later
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/api/health")
@@ -816,15 +815,24 @@ async def update_station_config(config: StationConfigRequest):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    """Serve main dashboard page"""
-    return templates.TemplateResponse("index.html", {"request": request, "page": "dashboard"})
+async def serve_vue_app():
+    """Serve the Vue application's index.html"""
+    return FileResponse("frontend/dist/index.html")
 
 
 @app.get("/graphs", response_class=HTMLResponse)
 async def graphs_page(request: Request):
     """Serve graphs & analysis page"""
-    return templates.TemplateResponse("graphs.html", {"request": request, "page": "graphs"})
+    return FileResponse("frontend/dist/index.html")
+
+
+# Catch-all for Vue SPA
+@app.get("/{path:path}", response_class=HTMLResponse)
+async def serve_vue_spa(path: str):
+    """Serve the Vue application for all other routes"""
+    # This ensures that any path not matching an API route or static asset
+    # will fall back to the Vue app's index.html, allowing Vue Router to handle it.
+    return FileResponse("frontend/dist/index.html")
 
 
 # Catch-all route MUST be last
