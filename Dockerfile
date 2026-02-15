@@ -18,6 +18,7 @@ COPY src/ ./src/
 COPY static/ ./static/
 COPY templates/ ./templates/
 COPY scripts/ ./scripts/
+COPY frontend/dist/ ./frontend/dist/
 
 # Create data directory
 RUN mkdir -p /data
