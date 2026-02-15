@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@layer base {
+  @reference;
+}
+
+/*
+  Base styles for the application.
+  This replaces custom CSS variables and basic body styles from static/css/style.css
+  with Tailwind's utility classes or custom configurations.
+*/
+
+/* Apply system-ui font and basic text/background colors */
+body {
+  @apply font-sans leading-relaxed text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900;
+}
+
+/* Custom styles for the app layout derived from static/css/style.css */
+/* These are direct Tailwind replacements or simple structural styles */
+
+.container {
+  @apply flex min-h-screen;
+}
+
+.sidebar {
+  @apply w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 py-8 fixed h-screen overflow-y-auto;
+}
+
+.logo {
+  @apply px-6 pb-8 border-b border-gray-200 dark:border-gray-700 mb-4;
+}
+
+.logo h1 {
+  @apply text-2xl font-bold text-blue-600;
+}
+
+.station-stats {
+  @apply mx-6 my-4 p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+}
+
+.station-stats .stats-header {
+  @apply flex items-center gap-2 mb-4;
+}
+
+.station-stats .stats-header h3 {
+  @apply text-xs uppercase text-gray-600 dark:text-gray-300 font-semibold tracking-wider m-0;
+}
+
+.station-stats .stats-icon {
+  @apply text-base;
+}
+
+.station-stats .stats-grid {
+  @apply grid grid-cols-2 gap-3;
+}
+
+.station-stats .stat-item {
+  @apply text-center p-2 bg-white dark:bg-gray-800 rounded-md border border-gray-100 dark:border-gray-700;
+}
+
+.station-stats .stat-value {
+  @apply text-base font-bold text-blue-600 mb-1 leading-tight transition-opacity duration-300;
+}
+
+.station-stats .stat-value.error {
+  @apply text-red-600;
+}
+
+.station-stats .stat-label {
+  @apply text-xs text-gray-500 dark:text-gray-400 uppercase tracking-tight font-medium;
+}
+
+.nav-menu {
+  @apply flex flex-col;
+}
+
+.nav-item {
+  @apply flex items-center py-3 px-6 text-gray-600 dark:text-gray-300 no-underline transition-all duration-200 border-l-4 border-transparent;
+}
+
+.nav-item:hover {
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+}
+
+.nav-item.active {
+  @apply bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-semibold;
+}
+
+.nav-icon {
+  @apply mr-3 text-xl;
+}
+
+.main-content {
+  @apply flex-1 ml-64 p-6 max-w-7xl; /* Adjust ml to match sidebar width */
+}
+
+/* Base heading styles, can be overridden by specific component styles */
+h2 {
+  @apply text-2xl font-bold mb-4 text-gray-800 dark:text-white;
+}
+
+h3 {
+  @apply text-xl font-semibold mb-4 text-gray-800 dark:text-white;
+}
