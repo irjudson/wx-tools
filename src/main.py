@@ -136,8 +136,9 @@ app.add_middleware(
 # Constants
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 
-# Mount static files
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+# Mount static files (only if they exist - allows tests to run without frontend build)
+if Path("frontend/dist/assets").exists():
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 
 @app.get("/api/health")

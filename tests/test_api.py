@@ -9,7 +9,9 @@ def test_root_endpoint():
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Weather Station Dashboard" in response.text
+    # Vue SPA serves the app div
+    assert '<div id="app"></div>' in response.text
+    assert "Weather Station" in response.text
 
 
 def test_health_endpoint():
