@@ -21,9 +21,22 @@ export function useDateRange() {
     const endParam = route.query.end as string;
 
     if (startParam && endParam) {
-      startDate.value = new Date(startParam);
-      endDate.value = new Date(endParam);
-      currentLabel.value = 'Custom';
+      const parsedStart = new Date(startParam);
+      const parsedEnd = new Date(endParam);
+
+      // Validate that dates are valid and start is before end
+      if (
+        !isNaN(parsedStart.getTime()) &&
+        !isNaN(parsedEnd.getTime()) &&
+        parsedStart <= parsedEnd
+      ) {
+        startDate.value = parsedStart;
+        endDate.value = parsedEnd;
+        currentLabel.value = 'Custom';
+      } else {
+        // Invalid dates, fall back to default preset
+        applyPreset('24h');
+      }
     } else {
       applyPreset('24h');
     }
@@ -66,9 +79,20 @@ export function useDateRange() {
   };
 
   const applyCustomRange = (start: Date, end: Date) => {
+    // Type guard: validate parameters are Date objects
+    if (!(start instanceof Date) || !(end instanceof Date)) {
+      throw new Error('Start and end must be Date objects');
+    }
+
+    // Validate dates are not null/undefined and are valid
+    if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new Error('Invalid date objects provided');
+    }
+
     if (start > end) {
       throw new Error('Start date must be before end date');
     }
+
     startDate.value = start;
     endDate.value = end;
     currentLabel.value = 'Custom';
@@ -77,6 +101,7 @@ export function useDateRange() {
   const updateUrl = () => {
     router.push({
       query: {
+        ...route.query, // Preserve existing query parameters
         start: startDate.value.toISOString(),
         end: endDate.value.toISOString(),
       },
