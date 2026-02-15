@@ -1,4 +1,4 @@
-import { ref, onUnmounted, type Ref } from 'vue';
+import { ref, onUnmounted, type Ref, markRaw } from 'vue';
 import {
   Chart,
   type ChartConfiguration,
@@ -27,36 +27,15 @@ export function useChart() {
         chartInstance.value.destroy();
       }
 
-      // Add zoom plugin configuration if not present
-      if (config.options && !config.options.plugins?.zoom) {
-        config.options.plugins = {
-          ...config.options.plugins,
-          zoom: {
-            zoom: {
-              wheel: {
-                enabled: true,
-                modifierKey: 'ctrl',
-              },
-              pinch: {
-                enabled: true,
-              },
-              mode: 'x',
-            },
-            pan: {
-              enabled: true,
-              mode: 'x',
-            },
-          },
-        };
-      }
-
-      chartInstance.value = new Chart(canvasRef.value, config);
+      chartInstance.value = markRaw(new Chart(canvasRef.value, config));
     }
   };
 
   const updateChart = (newData: any) => {
     if (chartInstance.value) {
-      chartInstance.value.data = newData;
+      // newData should be plain objects (not Vue reactive)
+      // Just extract the data property and assign directly
+      chartInstance.value.data = newData.data || newData;
       chartInstance.value.update();
     }
   };

@@ -62,35 +62,18 @@
 
     <!-- Chart Sections -->
     <div v-show="!weatherStore.isLoadingCharts && !weatherStore.chartsError" id="charts-container" class="grid grid-cols-1 gap-6">
-      <!-- Outdoor Temperature Chart -->
+      <!-- Outdoor Conditions (Temp + Humidity combined) -->
       <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="text-lg font-medium text-gray-800 dark:text-white">Outdoor Temperature (°F)</h3>
+          <h3 class="text-lg font-medium text-gray-800 dark:text-white">Outdoor Conditions</h3>
           <div v-if="outdoorTempStats" class="flex gap-2 text-sm">
-            <span class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Current: {{ outdoorTempStats.current }}°F</span>
+            <span class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Temp: {{ outdoorTempStats.current }}°F</span>
             <span class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">Min: {{ outdoorTempStats.min }}°F</span>
             <span class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">Max: {{ outdoorTempStats.max }}°F</span>
-            <span class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">Avg: {{ outdoorTempStats.avg }}°F</span>
           </div>
         </div>
         <div class="h-64">
-          <canvas :ref="outdoorTempChart.canvasRef"></canvas>
-        </div>
-      </div>
-
-      <!-- Outdoor Humidity Chart -->
-      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="text-lg font-medium text-gray-800 dark:text-white">Outdoor Humidity (%)</h3>
-          <div v-if="humidityStats" class="flex gap-2 text-sm">
-            <span class="bg-green-100 dark:bg-green-900 px-2 py-1 rounded">Current: {{ humidityStats.current }}%</span>
-            <span class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">Min: {{ humidityStats.min }}%</span>
-            <span class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">Max: {{ humidityStats.max }}%</span>
-            <span class="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">Avg: {{ humidityStats.avg }}%</span>
-          </div>
-        </div>
-        <div class="h-64">
-          <canvas :ref="outdoorHumidityChart.canvasRef"></canvas>
+          <canvas :ref="outdoorChart.canvasRef"></canvas>
         </div>
       </div>
 
@@ -99,6 +82,14 @@
         <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Wind Speed (mph)</h3>
         <div class="h-64">
           <canvas :ref="windSpeedChart.canvasRef"></canvas>
+        </div>
+      </div>
+
+      <!-- Wind Direction Chart -->
+      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
+        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Wind Direction</h3>
+        <div class="h-64">
+          <canvas :ref="windDirectionChart.canvasRef"></canvas>
         </div>
       </div>
 
@@ -118,19 +109,35 @@
         </div>
       </div>
 
-      <!-- Solar Radiation Chart -->
+      <!-- Solar & UV (combined) -->
       <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
-        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Solar Radiation (W/m²)</h3>
+        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Solar & UV</h3>
         <div class="h-64">
           <canvas :ref="solarChart.canvasRef"></canvas>
         </div>
       </div>
 
-      <!-- UV Index Chart -->
+      <!-- Indoor Conditions (Temp + Humidity combined) -->
       <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
-        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">UV Index</h3>
+        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Indoor Conditions</h3>
         <div class="h-64">
-          <canvas :ref="uvChart.canvasRef"></canvas>
+          <canvas :ref="indoorChart.canvasRef"></canvas>
+        </div>
+      </div>
+
+      <!-- Sensor 1 (Temp + Humidity combined) -->
+      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
+        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Sensor 1 (External Sensor)</h3>
+        <div class="h-64">
+          <canvas :ref="sensor1Chart.canvasRef"></canvas>
+        </div>
+      </div>
+
+      <!-- Battery Status (Outdoor + Sensor1 combined) -->
+      <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
+        <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">System Status</h3>
+        <div class="h-64">
+          <canvas :ref="batteryChart.canvasRef"></canvas>
         </div>
       </div>
     </div>
@@ -148,13 +155,15 @@ const weatherStore = useWeatherStore();
 const { dateRange, currentLabel, applyPreset, applyCustomRange, updateUrl, initializeFromUrl } = useDateRange();
 
 // Chart instances
-const outdoorTempChart = useChart();
-const outdoorHumidityChart = useChart();
+const outdoorChart = useChart();
 const windSpeedChart = useChart();
+const windDirectionChart = useChart();
 const rainfallChart = useChart();
 const pressureChart = useChart();
 const solarChart = useChart();
-const uvChart = useChart();
+const indoorChart = useChart();
+const sensor1Chart = useChart();
+const batteryChart = useChart();
 
 // UI state
 const isDropdownOpen = ref(false);
@@ -164,13 +173,15 @@ const customEndDate = ref('');
 
 // Chart references
 const allCharts = [
-  outdoorTempChart,
-  outdoorHumidityChart,
+  outdoorChart,
   windSpeedChart,
+  windDirectionChart,
   rainfallChart,
   pressureChart,
   solarChart,
-  uvChart,
+  indoorChart,
+  sensor1Chart,
+  batteryChart,
 ];
 
 // Stats calculations
@@ -212,8 +223,8 @@ const initializeCharts = () => {
 
   const timestamps = weatherStore.sampledReadings.map(r => new Date(r.timestamp));
 
-  // Outdoor Temperature Chart
-  const tempConfig: ChartConfiguration = {
+  // Outdoor Conditions Chart (Temp + Feels Like + Dew Point + Humidity)
+  const outdoorConfig: ChartConfiguration = {
     type: 'line',
     data: {
       labels: timestamps,
@@ -221,50 +232,54 @@ const initializeCharts = () => {
         {
           label: 'Temperature',
           data: weatherStore.sampledReadings.map(r => r.outdoor_temp_f),
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
         },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            unit: 'hour',
-          },
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Temperature (°F)',
-          },
-        },
-      },
-    },
-  };
-
-  // Humidity Chart
-  const humidityConfig: ChartConfiguration = {
-    type: 'line',
-    data: {
-      labels: timestamps,
-      datasets: [
         {
-          label: 'Humidity',
-          data: weatherStore.sampledReadings.map(r => r.humidity_pct),
+          label: 'Feels Like',
+          data: weatherStore.sampledReadings.map(r => r.feels_like_f),
+          borderColor: 'rgb(251, 146, 60)',
+          backgroundColor: 'rgba(251, 146, 60, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Dew Point',
+          data: weatherStore.sampledReadings.map(r => r.dew_point_f),
           borderColor: 'rgb(34, 197, 94)',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Humidity',
+          data: weatherStore.sampledReadings.map(r => r.humidity_pct),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -273,12 +288,27 @@ const initializeCharts = () => {
           },
         },
         y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Temp (°F)',
+          },
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
           title: {
             display: true,
             text: 'Humidity (%)',
           },
           min: 0,
           max: 100,
+          grid: {
+            drawOnChartArea: false,
+          },
         },
       },
     },
@@ -296,6 +326,7 @@ const initializeCharts = () => {
           borderColor: 'rgb(139, 92, 246)',
           backgroundColor: 'rgba(139, 92, 246, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
         },
         {
           label: 'Wind Gust',
@@ -303,12 +334,32 @@ const initializeCharts = () => {
           borderColor: 'rgb(239, 68, 68)',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+        },
+        {
+          label: 'Max Daily Gust',
+          data: weatherStore.sampledReadings.map(r => r.max_daily_gust_mph),
+          borderColor: 'rgb(220, 38, 38)',
+          backgroundColor: 'rgba(220, 38, 38, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          borderDash: [5, 5],
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -339,19 +390,60 @@ const initializeCharts = () => {
           borderColor: 'rgb(59, 130, 246)',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
         },
         {
-          label: 'Daily Rain',
+          label: 'Daily',
           data: weatherStore.sampledReadings.map(r => r.daily_rain_in),
           borderColor: 'rgb(34, 197, 94)',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
+        },
+        {
+          label: 'Event',
+          data: weatherStore.sampledReadings.map(r => r.event_rain_in),
+          borderColor: 'rgb(168, 85, 247)',
+          backgroundColor: 'rgba(168, 85, 247, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
+        },
+        {
+          label: 'Weekly',
+          data: weatherStore.sampledReadings.map(r => r.weekly_rain_in),
+          borderColor: 'rgb(236, 72, 153)',
+          backgroundColor: 'rgba(236, 72, 153, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
+        },
+        {
+          label: 'Monthly',
+          data: weatherStore.sampledReadings.map(r => r.monthly_rain_in),
+          borderColor: 'rgb(251, 146, 60)',
+          backgroundColor: 'rgba(251, 146, 60, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -360,11 +452,27 @@ const initializeCharts = () => {
           },
         },
         y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
           title: {
             display: true,
-            text: 'Rainfall (in)',
+            text: 'Rate (in/hr)',
           },
           min: 0,
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Accumulation (in)',
+          },
+          min: 0,
+          grid: {
+            drawOnChartArea: false,
+          },
         },
       },
     },
@@ -377,17 +485,36 @@ const initializeCharts = () => {
       labels: timestamps,
       datasets: [
         {
-          label: 'Pressure',
+          label: 'Relative Pressure',
           data: weatherStore.sampledReadings.map(r => r.relative_pressure_inhg),
           borderColor: 'rgb(168, 85, 247)',
           backgroundColor: 'rgba(168, 85, 247, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+        },
+        {
+          label: 'Absolute Pressure',
+          data: weatherStore.sampledReadings.map(r => r.absolute_pressure_inhg),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -405,7 +532,7 @@ const initializeCharts = () => {
     },
   };
 
-  // Solar Radiation Chart
+  // Solar & UV Chart (combined with dual Y-axes)
   const solarConfig: ChartConfiguration = {
     type: 'line',
     data: {
@@ -417,48 +544,286 @@ const initializeCharts = () => {
           borderColor: 'rgb(251, 146, 60)',
           backgroundColor: 'rgba(251, 146, 60, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
         },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            unit: 'hour',
-          },
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Solar Radiation (W/m²)',
-          },
-          min: 0,
-        },
-      },
-    },
-  };
-
-  // UV Index Chart
-  const uvConfig: ChartConfiguration = {
-    type: 'line',
-    data: {
-      labels: timestamps,
-      datasets: [
         {
           label: 'UV Index',
           data: weatherStore.sampledReadings.map(r => r.uv_index),
           borderColor: 'rgb(236, 72, 153)',
           backgroundColor: 'rgba(236, 72, 153, 0.1)',
           tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+          },
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Solar Radiation (W/m²)',
+          },
+          min: 0,
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'UV Index',
+          },
+          min: 0,
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
+      },
+    },
+  };
+
+  // Indoor Conditions Chart (Temp + Feels Like + Dew Point + Humidity)
+  const indoorConfig: ChartConfiguration = {
+    type: 'line',
+    data: {
+      labels: timestamps,
+      datasets: [
+        {
+          label: 'Temperature',
+          data: weatherStore.sampledReadings.map(r => r.indoor_temp_f),
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Feels Like',
+          data: weatherStore.sampledReadings.map(r => r.indoor_feels_like_f),
+          borderColor: 'rgb(251, 146, 60)',
+          backgroundColor: 'rgba(251, 146, 60, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Dew Point',
+          data: weatherStore.sampledReadings.map(r => r.indoor_dew_point_f),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Humidity',
+          data: weatherStore.sampledReadings.map(r => r.indoor_humidity_pct),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+          },
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Temp (°F)',
+          },
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Humidity (%)',
+          },
+          min: 0,
+          max: 100,
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
+      },
+    },
+  };
+
+  // Sensor 1 Chart (Temp + Feels Like + Dew Point + Humidity)
+  const sensor1Config: ChartConfiguration = {
+    type: 'line',
+    data: {
+      labels: timestamps,
+      datasets: [
+        {
+          label: 'Temperature',
+          data: weatherStore.sampledReadings.map(r => r.sensor1_temp_f),
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Feels Like',
+          data: weatherStore.sampledReadings.map(r => r.sensor1_feels_like_f),
+          borderColor: 'rgb(251, 146, 60)',
+          backgroundColor: 'rgba(251, 146, 60, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Dew Point',
+          data: weatherStore.sampledReadings.map(r => r.sensor1_dew_point_f),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Humidity',
+          data: weatherStore.sampledReadings.map(r => r.sensor1_humidity_pct),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+          yAxisID: 'y1',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+          },
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Temp (°F)',
+          },
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Humidity (%)',
+          },
+          min: 0,
+          max: 100,
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
+      },
+    },
+  };
+
+  // Battery Status Chart (Outdoor + Sensor1 combined)
+  const batteryConfig: ChartConfiguration = {
+    type: 'line',
+    data: {
+      labels: timestamps,
+      datasets: [
+        {
+          label: 'Outdoor Battery',
+          data: weatherStore.sampledReadings.map(r => r.outdoor_battery),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+        },
+        {
+          label: 'Sensor 1 Battery',
+          data: weatherStore.sampledReadings.map(r => r.sensor1_battery),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -469,22 +834,71 @@ const initializeCharts = () => {
         y: {
           title: {
             display: true,
-            text: 'UV Index',
+            text: 'Battery Level',
+          },
+        },
+      },
+    },
+  };
+
+  // Wind Direction Chart
+  const windDirectionConfig: ChartConfiguration = {
+    type: 'line',
+    data: {
+      labels: timestamps,
+      datasets: [
+        {
+          label: 'Wind Direction',
+          data: weatherStore.sampledReadings.map(r => r.wind_direction_deg),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          tension: 0.1,
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            boxWidth: 20,
+            padding: 10
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'hour',
+          },
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Direction (degrees)',
           },
           min: 0,
+          max: 360,
         },
       },
     },
   };
 
   // Initialize all charts
-  outdoorTempChart.initChart(tempConfig);
-  outdoorHumidityChart.initChart(humidityConfig);
+  outdoorChart.initChart(outdoorConfig);
   windSpeedChart.initChart(windConfig);
+  windDirectionChart.initChart(windDirectionConfig);
   rainfallChart.initChart(rainfallConfig);
   pressureChart.initChart(pressureConfig);
   solarChart.initChart(solarConfig);
-  uvChart.initChart(uvConfig);
+  indoorChart.initChart(indoorConfig);
+  sensor1Chart.initChart(sensor1Config);
+  batteryChart.initChart(batteryConfig);
 };
 
 // Date filter handlers

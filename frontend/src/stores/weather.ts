@@ -64,9 +64,7 @@ export const useWeatherStore = defineStore('weather', () => {
       }
 
       if (currentTimestamp !== lastKnownTimestamp.value) {
-        console.log('New data detected - refreshing data...');
         latestReading.value = data; // Update store with new data
-        console.log('latestReading.value updated to:', latestReading.value?.outdoor_temp_f);
         lastKnownTimestamp.value = currentTimestamp;
       }
     } catch (err) {

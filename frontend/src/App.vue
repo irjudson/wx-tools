@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="app-container">
     <!-- Sidebar -->
     <nav class="sidebar">
       <div class="logo">
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useWeatherStore } from './stores/weather';
 
 const weatherStore = useWeatherStore();
@@ -87,19 +87,19 @@ const stats24h = ref<{
 
 // Battery status
 const batteryStatus = computed(() => {
-  const voltage = weatherStore.latestReading?.battery_voltage;
-  if (!voltage) return 'N/A';
+  const battery = weatherStore.latestReading?.outdoor_battery;
+  if (battery === null || battery === undefined) return 'N/A';
 
-  // Convert voltage to percentage (typical range: 1.0V = 0%, 1.6V = 100%)
-  const pct = Math.min(100, Math.max(0, ((voltage - 1.0) / 0.6) * 100));
+  // Battery is 0-1 scale, convert to percentage
+  const pct = battery * 100;
   return `${pct.toFixed(0)}%`;
 });
 
 const batteryClass = computed(() => {
-  const voltage = weatherStore.latestReading?.battery_voltage;
-  if (!voltage) return '';
+  const battery = weatherStore.latestReading?.outdoor_battery;
+  if (battery === null || battery === undefined) return '';
 
-  const pct = ((voltage - 1.0) / 0.6) * 100;
+  const pct = battery * 100;
   if (pct < 20) return 'error';
   return '';
 });
@@ -119,10 +119,9 @@ const fetch24hStats = async () => {
     const response = await fetch(`/api/weather/readings?${params}`);
     if (!response.ok) return;
 
-    const data = await response.json();
-    const readings = data.readings || [];
+    const readings = await response.json();
 
-    if (readings.length === 0) return;
+    if (!Array.isArray(readings) || readings.length === 0) return;
 
     const temps = readings
       .map((r: any) => r.outdoor_temp_f)
@@ -138,10 +137,22 @@ const fetch24hStats = async () => {
   }
 };
 
-// Load stats on mount and refresh every 5 minutes
+// Load stats and latest reading on mount
 onMounted(() => {
+  // Fetch latest reading for battery status
+  weatherStore.fetchLatestReading();
+
+  // Fetch 24h stats for min/max/avg
   fetch24hStats();
   setInterval(fetch24hStats, 5 * 60 * 1000);
+
+  // Start auto-refresh for latest reading
+  weatherStore.startDashboardAutoRefresh();
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  weatherStore.stopDashboardAutoRefresh();
 });
 </script>
 

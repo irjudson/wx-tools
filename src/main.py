@@ -139,9 +139,6 @@ MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 # Mount static files
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
-# Mount static files for old assets for now, will remove later
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 @app.get("/api/health")
 async def health_check(db: Session = Depends(get_db)):
@@ -826,17 +823,14 @@ async def graphs_page(request: Request):
     return FileResponse("frontend/dist/index.html")
 
 
-# Catch-all for Vue SPA
-@app.get("/{path:path}", response_class=HTMLResponse)
-async def serve_vue_spa(path: str):
-    """Serve the Vue application for all other routes"""
-    # This ensures that any path not matching an API route or static asset
-    # will fall back to the Vue app's index.html, allowing Vue Router to handle it.
-    return FileResponse("frontend/dist/index.html")
+@app.get("/favicon.svg")
+async def favicon():
+    """Serve favicon"""
+    return FileResponse("frontend/dist/favicon.svg", media_type="image/svg+xml")
 
 
-# Catch-all route MUST be last
-@app.get("/{catchall:path}")
+# Weather upload catch-all route (must be before Vue SPA catch-all)
+@app.get("/api/weather/latest/{catchall:path}")
 async def catch_weather_upload(catchall: str, request: Request, db: Session = Depends(get_db)):
     """Catch-all route for weather stations that encode parameters in the path"""
     # Check if this looks like a weather upload (contains PASSKEY)
@@ -901,3 +895,10 @@ async def catch_weather_upload(catchall: str, request: Request, db: Session = De
         )
 
     raise HTTPException(status_code=404, detail="Not Found")
+
+
+# Catch-all for Vue SPA (MUST be last route)
+@app.get("/{path:path}", response_class=HTMLResponse)
+async def serve_vue_spa(path: str):
+    """Serve the Vue application for all other routes not caught above"""
+    return FileResponse("frontend/dist/index.html")

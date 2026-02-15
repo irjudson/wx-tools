@@ -18,8 +18,8 @@ body {
 /* Custom styles for the app layout derived from static/css/style.css */
 /* These are direct Tailwind replacements or simple structural styles */
 
-.container {
-  @apply flex min-h-screen;
+.app-container {
+  @apply flex h-screen overflow-hidden;
 }
 
 .sidebar {
@@ -91,7 +91,7 @@ body {
 }
 
 .main-content {
-  @apply flex-1 ml-64 p-6 max-w-7xl; /* Adjust ml to match sidebar width */
+  @apply flex-1 ml-64 p-6 overflow-y-auto;
 }
 
 /* Base heading styles, can be overridden by specific component styles */
@@ -101,4 +101,14 @@ h2 {
 
 h3 {
   @apply text-xl font-semibold mb-4 text-gray-800 dark:text-white;
+}
+
+/* Chart container and canvas constraints */
+.h-64 {
+  max-height: 16rem !important;
+}
+
+.h-64 canvas {
+  max-height: 100% !important;
+  height: 100% !important;
 }

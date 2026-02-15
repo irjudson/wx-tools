@@ -30,4 +30,11 @@ export interface WeatherReading {
   dew_point_1f: number;
   battery_voltage: number;
   battery_1: number;
+  outdoor_battery: number;
+  sensor1_temp_f: number;
+  sensor1_humidity_pct: number;
+  sensor1_feels_like_f: number;
+  sensor1_dew_point_f: number;
+  sensor1_battery: number;
+  total_rain_in: number;
 }
