@@ -98,35 +98,52 @@
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
             <p class="text-sm text-gray-600 dark:text-gray-400">Total Energy</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ solarResults.total_energy_kwh.toFixed(2) }} kWh
+              {{ solarResults.total_kwh.toFixed(2) }} kWh
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Average Power</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Daily Average</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ solarResults.average_power_w.toFixed(2) }} W
+              {{ solarResults.daily_avg_kwh.toFixed(2) }} kWh/day
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Peak Power</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Effective Efficiency</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ solarResults.peak_power_w.toFixed(2) }} W
+              {{ solarResults.data.effective_efficiency_pct?.toFixed(1) ?? '-' }}%
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Capacity Factor</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Annual Projection</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ solarResults.capacity_factor_percent.toFixed(1) }}%
+              {{ solarResults.roi?.annual_kwh?.toFixed(0) ?? '-' }} kWh/yr
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md col-span-full">
             <p class="text-sm text-gray-600 dark:text-gray-400">Analysis Period</p>
             <p class="text-sm text-gray-900 dark:text-white">
-              {{ formatDateTime(solarResults.period_start) }} to {{ formatDateTime(solarResults.period_end) }}
+              {{ formatDateTime(solarResults.start_date) }} to {{ formatDateTime(solarResults.end_date) }}
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              {{ solarResults.readings_count }} readings analyzed
+              {{ solarResults.data.num_readings }} readings analyzed over {{ solarResults.data.num_days }} days
             </p>
+          </div>
+          <div v-if="solarResults.roi" class="bg-white dark:bg-gray-800 p-4 rounded-md col-span-full">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Return on Investment</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Annual Savings:</span>
+                <span class="ml-2 font-semibold text-gray-900 dark:text-white">${{ solarResults.roi.annual_cost_savings.toFixed(2) }}</span>
+              </div>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">System Cost:</span>
+                <span class="ml-2 font-semibold text-gray-900 dark:text-white">${{ solarResults.roi.estimated_system_cost.toFixed(0) }}</span>
+              </div>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Payback Period:</span>
+                <span class="ml-2 font-semibold text-gray-900 dark:text-white">{{ solarResults.roi.payback_years.toFixed(1) }} years</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -206,41 +223,52 @@
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
             <p class="text-sm text-gray-600 dark:text-gray-400">Total Energy</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ windResults.total_energy_kwh.toFixed(2) }} kWh
+              {{ windResults.total_kwh.toFixed(2) }} kWh
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Average Power</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Daily Average</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ windResults.average_power_w.toFixed(2) }} W
-            </p>
-          </div>
-          <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Peak Power</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ windResults.peak_power_w.toFixed(2) }} W
-            </p>
-          </div>
-          <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Capacity Factor</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ windResults.capacity_factor_percent.toFixed(1) }}%
+              {{ windResults.daily_avg_kwh.toFixed(2) }} kWh/day
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
             <p class="text-sm text-gray-600 dark:text-gray-400">Average Wind Speed</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ windResults.average_wind_speed_mph.toFixed(1) }} mph
+              {{ windResults.data.avg_wind_speed?.toFixed(1) ?? '-' }} mph
+            </p>
+          </div>
+          <div class="bg-white dark:bg-gray-800 p-4 rounded-md">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Annual Projection</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">
+              {{ windResults.roi?.annual_kwh?.toFixed(0) ?? '-' }} kWh/yr
             </p>
           </div>
           <div class="bg-white dark:bg-gray-800 p-4 rounded-md col-span-full">
             <p class="text-sm text-gray-600 dark:text-gray-400">Analysis Period</p>
             <p class="text-sm text-gray-900 dark:text-white">
-              {{ formatDateTime(windResults.period_start) }} to {{ formatDateTime(windResults.period_end) }}
+              {{ formatDateTime(windResults.start_date) }} to {{ formatDateTime(windResults.end_date) }}
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              {{ windResults.readings_count }} readings analyzed
+              {{ windResults.data.num_readings }} readings analyzed over {{ windResults.data.num_days }} days
             </p>
+          </div>
+          <div v-if="windResults.roi" class="bg-white dark:bg-gray-800 p-4 rounded-md col-span-full">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Return on Investment</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Annual Savings:</span>
+                <span class="ml-2 font-semibold text-gray-900 dark:text-white">${{ windResults.roi.annual_cost_savings.toFixed(2) }}</span>
+              </div>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">System Cost:</span>
+                <span class="ml-2 font-semibold text-gray-900 dark:text-white">${{ windResults.roi.estimated_system_cost.toFixed(0) }}</span>
+              </div>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Payback Period:</span>
+                <span class="ml-2 font-semibold text-gray-900 dark:text-white">{{ windResults.roi.payback_years.toFixed(1) }} years</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
