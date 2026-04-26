@@ -12,7 +12,8 @@
 
 /* Apply system-ui font and basic text/background colors */
 body {
-  @apply font-sans leading-relaxed text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900;
+  @apply leading-relaxed text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Custom styles for the app layout derived from static/css/style.css */
