@@ -1,0 +1,19 @@
+{
+  "name": "WX Station",
+  "short_name": "WX",
+  "description": "Personal weather station dashboard",
+  "theme_color": "#111827",
+  "background_color": "#111827",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/wx-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
