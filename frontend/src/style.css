@@ -35,7 +35,7 @@ body {
 
 /* ── Sidebar ── */
 .sidebar {
-  @apply fixed left-0 top-0 h-screen bg-gray-900 border-r border-gray-700/50 flex flex-col overflow-hidden z-30;
+  @apply fixed left-0 top-0 h-screen bg-gray-900 border-r border-gray-700/50 overflow-hidden z-30;
   transition: width 200ms ease;
 }
 
