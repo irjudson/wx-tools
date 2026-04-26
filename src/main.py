@@ -22,6 +22,7 @@ from src.services.query import get_latest_reading, get_readings, get_database_st
 from src.services.config import get_mqtt_config, set_mqtt_config
 from src.services.mqtt_publisher import MQTTPublisher, MQTTConfig
 from src.services.sampling import get_sampled_readings
+from src.services.astronomy import ForecastService, LightPollutionService, MoonService, TonightForecast
 from src.analysis.solar import SolarAnalyzer
 from src.analysis.wind import WindAnalyzer
 
@@ -812,6 +813,50 @@ async def update_station_config(config: StationConfigRequest):
     settings.station_passkey = config.passkey
 
     return {"success": True}
+
+
+@app.get("/api/astronomy/tonight", response_model=TonightForecast)
+async def astronomy_tonight():
+    """Return tonight's astronomical observing forecast."""
+    cfg = get_settings()
+    lat, lon = cfg.station_latitude, cfg.station_longitude
+
+    forecast_svc = ForecastService()
+    light_svc = LightPollutionService()
+    moon_svc = MoonService()
+
+    forecast = forecast_svc.get_forecast(lat, lon, hours=12)
+    sky_quality = light_svc.get_sky_quality(lat, lon)
+    moon = moon_svc.get_moon_info()
+
+    # Overall score: best hour in the next 12h
+    score = max((h.score for h in forecast), default=0.0)
+
+    if score >= 0.75:
+        suitability = "excellent"
+    elif score >= 0.5:
+        suitability = "good"
+    elif score >= 0.25:
+        suitability = "fair"
+    else:
+        suitability = "poor"
+
+    issues = []
+    if forecast:
+        worst_cloud = max(forecast, key=lambda h: ["CLEAR","MOSTLY_CLEAR","PARTLY_CLOUDY","MOSTLY_CLOUDY","OVERCAST"].index(h.cloud_cover.value))
+        if worst_cloud.cloud_cover.value in ("PARTLY_CLOUDY", "MOSTLY_CLOUDY", "OVERCAST"):
+            issues.append(f"Cloud cover expected ({worst_cloud.cloud_cover.value.replace('_', ' ').title()})")
+    if moon.interfering:
+        issues.append(f"Bright moon ({moon.illumination_pct:.0f}% illuminated)")
+
+    return TonightForecast(
+        suitability=suitability,
+        score=round(score, 2),
+        issues=issues,
+        moon=moon,
+        sky_quality=sky_quality,
+        forecast=forecast,
+    )
 
 
 @app.get("/", response_class=HTMLResponse)

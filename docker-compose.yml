@@ -10,6 +10,10 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite:////data/weather.db}
       - STATION_PASSKEY=${STATION_PASSKEY:-change_me}
       - LOG_LEVEL=INFO
+      - STATION_LATITUDE=${STATION_LATITUDE:-0.0}
+      - STATION_LONGITUDE=${STATION_LONGITUDE:-0.0}
+      - STATION_BORTLE_CLASS=${STATION_BORTLE_CLASS:-}
+      - STATION_LIGHTPOLL_KEY=${STATION_LIGHTPOLL_KEY:-}
     volumes:
       - ./data:/data
       - ./src:/app/src
