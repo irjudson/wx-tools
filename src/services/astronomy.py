@@ -296,13 +296,7 @@ class LightPollutionService:
             bortle = max(1, min(9, cfg.station_bortle_class))
             return _sky_quality_for_bortle(bortle, "configured")
 
-        # 2. lightpollutionmap.info QueryRaster API (requires free key)
-        if cfg.station_lightpoll_key:
-            sq = self._query_raster(latitude, longitude, cfg.station_lightpoll_key)
-            if sq:
-                return sq
-
-        # 3. lightpollutionmap.info legacy SQM endpoint (no key, may be unreliable)
+        # 2. lightpollutionmap.info SQM endpoint (free, no key)
         try:
             resp = requests.get(
                 f"https://api.lightpollutionmap.info/sqm/{latitude}/{longitude}",
@@ -321,46 +315,10 @@ class LightPollutionService:
                 source="api",
             )
         except Exception as exc:
-            log.warning(f"lightpollutionmap.info SQM request failed: {exc}")
+            log.warning(f"lightpollutionmap.info request failed: {exc}")
 
-        # 4. Static fallback
+        # 3. Static fallback
         return _sky_quality_for_bortle(4, "estimated")
-
-    def _query_raster(self, latitude: float, longitude: float, key: str) -> Optional[SkyQuality]:
-        """lightpollutionmap.info QueryRaster API — returns World Atlas 2015 brightness."""
-        try:
-            resp = requests.get(
-                "https://www.lightpollutionmap.info/QueryRaster/",
-                params={
-                    "ql": "wa_2015",
-                    "qt": "point",
-                    "qd": f"{longitude},{latitude}",
-                    "key": key,
-                },
-                timeout=self._TIMEOUT,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            # Response is artificial brightness in mcd/m² on a unit sphere
-            # Convert to SQM using Falchi et al. formula
-            brightness_mcd = float(data.get("data", 0) or 0)
-            if brightness_mcd <= 0:
-                return None
-            # Natural sky background ≈ 0.171 mcd/m²; total = natural + artificial
-            total = brightness_mcd + 0.171
-            sqm = round(-2.5 * math.log10(total / 108.0) + 12.58, 2)
-            bortle = _bortle_from_sqm(sqm)
-            return SkyQuality(
-                bortle_class=bortle,
-                bortle_name=_BORTLE_DESCRIPTIONS.get(bortle, "Unknown"),
-                sqm_estimate=sqm,
-                limiting_magnitude=_BORTLE_LIMITING_MAG.get(bortle, 5.5),
-                milky_way_visibility=_BORTLE_MILKY_WAY.get(bortle, "not visible"),
-                source="api",
-            )
-        except Exception as exc:
-            log.warning(f"lightpollutionmap.info QueryRaster failed: {exc}")
-            return None
 
 
 class MoonService:
