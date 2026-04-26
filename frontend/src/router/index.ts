@@ -5,6 +5,7 @@ import ImportData from '../views/ImportData.vue';
 import EnergyAnalysis from '../views/EnergyAnalysis.vue';
 import DataExplorer from '../views/DataExplorer.vue';
 import Settings from '../views/Settings.vue';
+import Sky from '../views/Sky.vue';
 
 const routes = [
   {
@@ -42,6 +43,12 @@ const routes = [
     name: 'Settings',
     component: Settings,
     meta: { public: false },
+  },
+  {
+    path: '/sky',
+    name: 'Sky',
+    component: Sky,
+    meta: { public: true },
   },
 ];
 

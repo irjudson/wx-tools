@@ -150,6 +150,7 @@ function toggleSidebar() {
 // ── Nav links ──
 const navLinks = [
   { to: '/',         label: 'Dashboard',       icon: 'home' },
+  { to: '/sky',      label: "Tonight's Sky",   icon: 'star' },
   { to: '/graphs',   label: 'Graphs',          icon: 'graphs' },
   { to: '/import',   label: 'Import Data',     icon: 'import' },
   { to: '/analysis', label: 'Energy Analysis', icon: 'analysis' },
