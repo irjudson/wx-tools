@@ -1,132 +1,189 @@
 <template>
   <div class="app-container">
-    <!-- Sidebar -->
-    <nav class="sidebar">
+
+    <!-- ── Desktop Sidebar ── -->
+    <nav :class="['sidebar hidden md:flex flex-col', sidebarCollapsed ? 'collapsed' : 'expanded']">
+      <!-- Logo -->
       <div class="logo">
-        <h1>Weather Station</h1>
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          </svg>
+        </div>
+        <span class="logo-text sidebar-text">WX Station</span>
       </div>
 
       <!-- Station Statistics -->
-      <div class="station-stats">
+      <div class="station-stats sidebar-text">
         <div class="stats-header">
-          <span class="stats-icon">📊</span>
-          <h3>Station Statistics</h3>
+          <div class="status-dot"></div>
+          <h3>24h Station Stats</h3>
         </div>
         <div class="stats-grid">
           <div class="stat-item">
-            <div class="stat-value">{{ stats24h.minTemp !== null ? stats24h.minTemp.toFixed(1) + '°F' : 'N/A' }}</div>
+            <div class="stat-value">{{ stats24h.minTemp !== null ? stats24h.minTemp.toFixed(1) + '°' : '--' }}</div>
             <div class="stat-label">Min Temp</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value">{{ stats24h.maxTemp !== null ? stats24h.maxTemp.toFixed(1) + '°F' : 'N/A' }}</div>
+            <div class="stat-value">{{ stats24h.maxTemp !== null ? stats24h.maxTemp.toFixed(1) + '°' : '--' }}</div>
             <div class="stat-label">Max Temp</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value">{{ stats24h.avgTemp !== null ? stats24h.avgTemp.toFixed(1) + '°F' : 'N/A' }}</div>
+            <div class="stat-value">{{ stats24h.avgTemp !== null ? stats24h.avgTemp.toFixed(1) + '°' : '--' }}</div>
             <div class="stat-label">Avg Temp</div>
           </div>
           <div class="stat-item">
             <div :class="['stat-value', batteryClass]">{{ batteryStatus }}</div>
-            <div class="stat-label">Outdoor Battery</div>
+            <div class="stat-label">Battery</div>
           </div>
         </div>
       </div>
 
-      <!-- Navigation Menu -->
-      <div class="nav-menu">
-        <router-link to="/" class="nav-item" active-class="active">
-          <span class="nav-icon">🏠</span>
-          Dashboard
+      <!-- Navigation -->
+      <nav class="nav-menu">
+        <router-link v-for="link in navLinks" :key="link.to"
+          :to="link.to" class="nav-item" active-class="active"
+          :title="sidebarCollapsed ? link.label : undefined">
+          <NavIcons :name="link.icon" :size="20" />
+          <span class="sidebar-text text-sm">{{ link.label }}</span>
         </router-link>
-        <router-link to="/graphs" class="nav-item" active-class="active">
-          <span class="nav-icon">📈</span>
-          Graphs & Analysis
-        </router-link>
-        <router-link to="/import" class="nav-item" active-class="active">
-          <span class="nav-icon">📥</span>
-          Import Data
-        </router-link>
-        <router-link to="/analysis" class="nav-item" active-class="active">
-          <span class="nav-icon">🔬</span>
-          Energy Analysis
-        </router-link>
-        <router-link to="/explorer" class="nav-item" active-class="active">
-          <span class="nav-icon">🔭</span>
-          Data Explorer
-        </router-link>
-        <router-link to="/settings" class="nav-item" active-class="active">
-          <span class="nav-icon">⚙️</span>
-          Settings
-        </router-link>
-      </div>
+      </nav>
+
+      <!-- Collapse toggle -->
+      <button class="sidebar-toggle" @click="toggleSidebar"
+        :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+        <NavIcons :name="sidebarCollapsed ? 'chevron-right' : 'chevron-left'" :size="12" />
+      </button>
     </nav>
 
-    <!-- Main Content Area -->
-    <main class="main-content">
+    <!-- ── Mobile Top App Bar ── -->
+    <header class="top-app-bar">
+      <span class="text-white font-semibold text-base">WX Station</span>
+      <button @click="drawerOpen = true" class="text-gray-300 hover:text-white p-1" aria-label="Open menu">
+        <NavIcons name="menu" :size="24" />
+      </button>
+    </header>
+
+    <!-- ── Mobile Drawer ── -->
+    <Transition name="fade">
+      <div v-if="drawerOpen" class="drawer-overlay" @click="drawerOpen = false" />
+    </Transition>
+
+    <div :class="['mobile-drawer', drawerOpen ? 'open' : 'closed']">
+      <div class="logo border-b border-gray-700/50 justify-between">
+        <div class="flex items-center gap-3">
+          <div class="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+              fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+            </svg>
+          </div>
+          <span class="logo-text">WX Station</span>
+        </div>
+        <button @click="drawerOpen = false" class="text-gray-400 hover:text-white">
+          <NavIcons name="x" :size="20" />
+        </button>
+      </div>
+
+      <!-- Station stats in drawer -->
+      <div class="station-stats mx-3 my-3">
+        <div class="stats-header">
+          <div class="status-dot"></div>
+          <h3>24h Station Stats</h3>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value">{{ stats24h.minTemp !== null ? stats24h.minTemp.toFixed(1) + '°' : '--' }}</div>
+            <div class="stat-label">Min</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ stats24h.maxTemp !== null ? stats24h.maxTemp.toFixed(1) + '°' : '--' }}</div>
+            <div class="stat-label">Max</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ stats24h.avgTemp !== null ? stats24h.avgTemp.toFixed(1) + '°' : '--' }}</div>
+            <div class="stat-label">Avg</div>
+          </div>
+          <div class="stat-item">
+            <div :class="['stat-value', batteryClass]">{{ batteryStatus }}</div>
+            <div class="stat-label">Battery</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <router-link v-for="link in navLinks" :key="link.to"
+          :to="link.to" class="nav-item" active-class="active"
+          @click="drawerOpen = false">
+          <NavIcons :name="link.icon" :size="20" />
+          <span class="text-sm">{{ link.label }}</span>
+        </router-link>
+      </nav>
+    </div>
+
+    <!-- ── Main Content ── -->
+    <main :class="['main-content', sidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded']">
       <router-view />
     </main>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useWeatherStore } from './stores/weather';
+import NavIcons from './components/NavIcons.vue';
 
 const weatherStore = useWeatherStore();
 
-// 24-hour statistics
-const stats24h = ref<{
-  minTemp: number | null;
-  maxTemp: number | null;
-  avgTemp: number | null;
-}>({
-  minTemp: null,
-  maxTemp: null,
-  avgTemp: null,
+// ── Sidebar state ──
+const STORAGE_KEY = 'wx-sidebar-collapsed';
+const sidebarCollapsed = ref(localStorage.getItem(STORAGE_KEY) === 'true');
+const drawerOpen = ref(false);
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
+  localStorage.setItem(STORAGE_KEY, String(sidebarCollapsed.value));
+}
+
+// ── Nav links ──
+const navLinks = [
+  { to: '/',         label: 'Dashboard',       icon: 'home' },
+  { to: '/graphs',   label: 'Graphs',          icon: 'graphs' },
+  { to: '/import',   label: 'Import Data',     icon: 'import' },
+  { to: '/analysis', label: 'Energy Analysis', icon: 'analysis' },
+  { to: '/explorer', label: 'Data Explorer',   icon: 'explorer' },
+  { to: '/settings', label: 'Settings',        icon: 'settings' },
+];
+
+// ── 24h statistics ──
+const stats24h = ref<{ minTemp: number | null; maxTemp: number | null; avgTemp: number | null }>({
+  minTemp: null, maxTemp: null, avgTemp: null,
 });
 
-// Battery status
 const batteryStatus = computed(() => {
   const battery = weatherStore.latestReading?.outdoor_battery;
   if (battery === null || battery === undefined) return 'N/A';
-
-  // Battery is 0-1 scale, convert to percentage
-  const pct = battery * 100;
-  return `${pct.toFixed(0)}%`;
+  return `${(battery * 100).toFixed(0)}%`;
 });
 
 const batteryClass = computed(() => {
   const battery = weatherStore.latestReading?.outdoor_battery;
   if (battery === null || battery === undefined) return '';
-
-  const pct = battery * 100;
-  if (pct < 20) return 'error';
-  return '';
+  return battery * 100 < 20 ? 'error' : '';
 });
 
-// Fetch 24h statistics
 const fetch24hStats = async () => {
   try {
     const end = new Date();
     const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-
-    const params = new URLSearchParams({
-      start: start.toISOString(),
-      end: end.toISOString(),
-      limit: '1440', // 24h at 1 reading per minute
-    });
-
+    const params = new URLSearchParams({ start: start.toISOString(), end: end.toISOString(), limit: '1440' });
     const response = await fetch(`/api/weather/readings?${params}`);
     if (!response.ok) return;
-
     const readings = await response.json();
-
     if (!Array.isArray(readings) || readings.length === 0) return;
-
-    const temps = readings
-      .map((r: any) => r.outdoor_temp_f)
-      .filter((t: any) => t !== null && t !== undefined);
-
+    const temps = readings.map((r: any) => r.outdoor_temp_f).filter((t: any) => t !== null && t !== undefined);
     if (temps.length > 0) {
       stats24h.value.minTemp = Math.min(...temps);
       stats24h.value.maxTemp = Math.max(...temps);
@@ -137,28 +194,22 @@ const fetch24hStats = async () => {
   }
 };
 
-// Load stats and latest reading on mount
+let statsInterval: ReturnType<typeof setInterval>;
+
 onMounted(() => {
-  // Fetch latest reading for battery status
   weatherStore.fetchLatestReading();
-
-  // Fetch 24h stats for min/max/avg
   fetch24hStats();
-  setInterval(fetch24hStats, 5 * 60 * 1000);
-
-  // Start auto-refresh for latest reading
+  statsInterval = setInterval(fetch24hStats, 5 * 60 * 1000);
   weatherStore.startDashboardAutoRefresh();
 });
 
-// Cleanup on unmount
 onUnmounted(() => {
+  clearInterval(statsInterval);
   weatherStore.stopDashboardAutoRefresh();
 });
 </script>
 
 <style scoped>
-/*
-  This file is intentionally left blank as styles are being migrated to Tailwind CSS.
-  Any remaining styles here should be considered temporary or under migration.
-*/
+.fade-enter-active, .fade-leave-active { transition: opacity 150ms ease; }
+.fade-enter-from, .fade-leave-to      { opacity: 0; }
 </style>

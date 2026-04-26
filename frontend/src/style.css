@@ -33,77 +33,135 @@ body {
   @apply flex h-screen overflow-hidden;
 }
 
+/* ── Sidebar ── */
 .sidebar {
-  @apply w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 py-8 fixed h-screen overflow-y-auto;
+  @apply fixed left-0 top-0 h-screen bg-gray-900 border-r border-gray-700/50 flex flex-col overflow-hidden z-30;
+  transition: width 200ms ease;
 }
+
+.sidebar.expanded  { width: 256px; }
+.sidebar.collapsed { width: 64px; }
+
+.sidebar.collapsed .sidebar-text   { @apply hidden; }
+.sidebar.collapsed .station-stats  { @apply hidden; }
+.sidebar.collapsed .logo-text      { @apply hidden; }
 
 .logo {
-  @apply px-6 pb-8 border-b border-gray-200 dark:border-gray-700 mb-4;
+  @apply flex items-center gap-3 px-4 py-5 border-b border-gray-700/50 flex-shrink-0;
 }
 
-.logo h1 {
-  @apply text-2xl font-bold text-blue-600;
+.logo-icon {
+  @apply w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center flex-shrink-0;
+}
+
+.logo-text {
+  @apply text-lg font-bold text-white truncate;
 }
 
 .station-stats {
-  @apply mx-6 my-4 p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg;
+  @apply mx-3 my-3 p-3 bg-gray-800 rounded-xl border border-gray-700/60 flex-shrink-0;
 }
 
 .station-stats .stats-header {
-  @apply flex items-center gap-2 mb-4;
+  @apply flex items-center gap-2 mb-3;
 }
 
 .station-stats .stats-header h3 {
-  @apply text-xs uppercase text-gray-600 dark:text-gray-300 font-semibold tracking-wider m-0;
+  @apply text-xs uppercase text-gray-400 font-semibold tracking-wider m-0;
 }
 
-.station-stats .stats-icon {
-  @apply text-base;
+.status-dot {
+  @apply w-2 h-2 rounded-full bg-green-400 flex-shrink-0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
 }
 
 .station-stats .stats-grid {
-  @apply grid grid-cols-2 gap-3;
+  @apply grid grid-cols-2 gap-2;
 }
 
 .station-stats .stat-item {
-  @apply text-center p-2 bg-white dark:bg-gray-800 rounded-md border border-gray-100 dark:border-gray-700;
+  @apply text-center p-2 bg-gray-900/60 rounded-lg;
 }
 
 .station-stats .stat-value {
-  @apply text-base font-bold text-blue-600 mb-1 leading-tight transition-opacity duration-300;
+  @apply text-sm font-bold text-sky-400 leading-tight;
 }
 
 .station-stats .stat-value.error {
-  @apply text-red-600;
+  @apply text-red-400;
 }
 
 .station-stats .stat-label {
-  @apply text-xs text-gray-500 dark:text-gray-400 uppercase tracking-tight font-medium;
+  @apply text-xs text-gray-500 uppercase tracking-tight font-medium;
 }
 
 .nav-menu {
-  @apply flex flex-col;
+  @apply flex flex-col flex-1 overflow-y-auto py-2;
 }
 
 .nav-item {
-  @apply flex items-center py-3 px-6 text-gray-600 dark:text-gray-300 no-underline transition-all duration-200 border-l-4 border-transparent;
+  @apply flex items-center gap-3 py-2.5 px-4 text-gray-400 no-underline transition-all duration-150 rounded-lg mx-2 my-0.5;
+}
+
+.sidebar.collapsed .nav-item {
+  @apply justify-center px-0 mx-2;
 }
 
 .nav-item:hover {
-  @apply bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+  @apply bg-gray-800 text-white;
 }
 
 .nav-item.active {
-  @apply bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 font-semibold;
+  @apply bg-gray-800 text-white font-semibold;
 }
 
-.nav-icon {
-  @apply mr-3 text-xl;
+.nav-item.active svg {
+  @apply text-sky-400;
 }
 
+.sidebar-toggle {
+  @apply absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-700 border border-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-600 transition-colors cursor-pointer z-40;
+}
+
+/* ── Main Content ── */
 .main-content {
-  @apply flex-1 ml-64 p-6 overflow-y-auto;
+  @apply flex-1 overflow-y-auto;
+  transition: margin-left 200ms ease;
 }
+
+.main-content.sidebar-expanded  { margin-left: 256px; }
+.main-content.sidebar-collapsed { margin-left: 64px; }
+
+@media (max-width: 767px) {
+  .main-content.sidebar-expanded,
+  .main-content.sidebar-collapsed {
+    margin-left: 0;
+    margin-top: 56px;
+  }
+}
+
+/* ── Mobile Top App Bar ── */
+.top-app-bar {
+  @apply fixed top-0 left-0 right-0 h-14 bg-gray-900 border-b border-gray-700/50 flex items-center justify-between px-4 z-40 md:hidden;
+}
+
+/* ── Mobile Drawer ── */
+.drawer-overlay {
+  @apply fixed inset-0 bg-black/60 z-40 md:hidden;
+}
+
+.mobile-drawer {
+  @apply fixed top-0 left-0 h-full w-72 bg-gray-900 z-50 flex flex-col md:hidden;
+  transition: transform 200ms ease;
+}
+
+.mobile-drawer.open   { transform: translateX(0); }
+.mobile-drawer.closed { transform: translateX(-100%); }
 
 /* Base heading styles, can be overridden by specific component styles */
 h2 {
