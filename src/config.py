@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     station_latitude: float = 0.0
     station_longitude: float = 0.0
+    station_bortle_class: Optional[int] = None     # 1-9; overrides API lookup when set
+    station_lightpoll_key: Optional[str] = None    # lightpollutionmap.info QueryRaster API key
 
     model_config = ConfigDict(env_file=".env")
 

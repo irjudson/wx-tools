@@ -87,19 +87,53 @@ def test_hour_score_worst_conditions():
     assert score == pytest.approx(0.0 * 0.5 + 0.2 * 0.3 + 0.2 * 0.2)
 
 
-# ── ForecastService ────────────────────────────────────────────────────────
+# ── ForecastService (7timer.info ASTRO) ───────────────────────────────────
 
-OPEN_METEO_RESPONSE = {
-    "hourly": {
-        "time": [
-            "2099-01-01T00:00", "2099-01-01T01:00", "2099-01-01T02:00",
-        ],
-        "cloud_cover": [5, 50, 95],
-        "visibility": [30000, 10000, 2000],
-        "wind_speed_10m": [3, 20, 45],
-        "temperature_2m": [10.0, 11.0, 12.0],
+def _seven_timer_response() -> dict:
+    """Build a 7timer ASTRO mock with an init time 1 hour ago so all timepoints are in-window."""
+    init_dt = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    init_str = init_dt.strftime("%Y%m%d%H")
+    return {
+        "product": "astro",
+        "init": init_str,
+        "dataseries": _SEVEN_TIMER_DATASERIES,
     }
-}
+
+_SEVEN_TIMER_DATASERIES = [
+        {
+            "timepoint": 3,
+            "cloudcover": 1,      # CLEAR (0-6%)
+            "seeing": 2,          # EXCELLENT (<0.75")
+            "transparency": 1,    # EXCELLENT (<0.3 mag)
+            "lifted_index": 2,
+            "rh2m": 3,
+            "wind10m": {"direction": "W", "speed": 1},
+            "temp2m": 10,
+            "prec_type": "none",
+        },
+        {
+            "timepoint": 6,
+            "cloudcover": 3,      # PARTLY_CLOUDY (19-31%)
+            "seeing": 5,          # AVERAGE (1.25-1.5")
+            "transparency": 4,    # AVERAGE (0.5-0.6 mag)
+            "lifted_index": 0,
+            "rh2m": 6,
+            "wind10m": {"direction": "SW", "speed": 3},
+            "temp2m": 11,
+            "prec_type": "none",
+        },
+        {
+            "timepoint": 9,
+            "cloudcover": 7,      # OVERCAST (88-100%)
+            "seeing": 8,          # POOR (>2.5")
+            "transparency": 8,    # POOR (>1 mag)
+            "lifted_index": -4,
+            "rh2m": 9,
+            "wind10m": {"direction": "S", "speed": 5},
+            "temp2m": 12,
+            "prec_type": "rain",
+        },
+    ]
 
 
 class TestForecastService:
@@ -107,17 +141,27 @@ class TestForecastService:
         self.svc = ForecastService()
 
     @patch("src.services.astronomy.requests.get")
-    def test_returns_hourly_forecasts(self, mock_get):
+    def test_returns_forecasts_from_7timer(self, mock_get):
         mock_resp = MagicMock()
-        mock_resp.json.return_value = OPEN_METEO_RESPONSE
+        mock_resp.json.return_value = _seven_timer_response()
         mock_get.return_value = mock_resp
 
         results = self.svc.get_forecast(47.6, -122.3, hours=12)
-        # All 3 mock hours are in the future (year 2099)
         assert len(results) == 3
         assert results[0].cloud_cover == CloudCover.CLEAR
         assert results[1].cloud_cover == CloudCover.PARTLY_CLOUDY
         assert results[2].cloud_cover == CloudCover.OVERCAST
+
+    @patch("src.services.astronomy.requests.get")
+    def test_seeing_mapped_correctly(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = _seven_timer_response()
+        mock_get.return_value = mock_resp
+
+        results = self.svc.get_forecast(47.6, -122.3, hours=12)
+        assert results[0].seeing == Seeing.EXCELLENT   # scale 2
+        assert results[1].seeing == Seeing.AVERAGE     # scale 5
+        assert results[2].seeing == Seeing.POOR        # scale 8
 
     @patch("src.services.astronomy.requests.get")
     def test_returns_empty_on_network_error(self, mock_get):
@@ -128,7 +172,7 @@ class TestForecastService:
     @patch("src.services.astronomy.requests.get")
     def test_score_in_range(self, mock_get):
         mock_resp = MagicMock()
-        mock_resp.json.return_value = OPEN_METEO_RESPONSE
+        mock_resp.json.return_value = _seven_timer_response()
         mock_get.return_value = mock_resp
         results = self.svc.get_forecast(47.6, -122.3, hours=12)
         for r in results:
@@ -137,12 +181,22 @@ class TestForecastService:
 
 # ── LightPollutionService ──────────────────────────────────────────────────
 
+def _no_override_settings():
+    """Fake settings with no Bortle override so API-path tests reach the API branch."""
+    s = MagicMock()
+    s.station_bortle_class = None
+    s.station_lightpoll_key = None
+    return s
+
+
 class TestLightPollutionService:
     def setup_method(self):
         self.svc = LightPollutionService()
 
+    @patch("src.config.get_settings")
     @patch("src.services.astronomy.requests.get")
-    def test_returns_sky_quality_from_api(self, mock_get):
+    def test_returns_sky_quality_from_api(self, mock_get, mock_settings):
+        mock_settings.return_value = _no_override_settings()
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"sqm": 20.8, "bortle": 4}
         mock_get.return_value = mock_resp
@@ -152,17 +206,39 @@ class TestLightPollutionService:
         assert sq.sqm_estimate == pytest.approx(20.8)
         assert sq.source == "api"
 
+    @patch("src.config.get_settings")
     @patch("src.services.astronomy.requests.get")
-    def test_falls_back_to_estimate_on_error(self, mock_get):
+    def test_falls_back_to_estimate_on_error(self, mock_get, mock_settings):
+        mock_settings.return_value = _no_override_settings()
         mock_get.side_effect = Exception("network error")
         sq = self.svc.get_sky_quality(47.6, -122.3)
         assert sq.source == "estimated"
         assert 1 <= sq.bortle_class <= 9
 
+    @patch("src.config.get_settings")
     @patch("src.services.astronomy.requests.get")
-    def test_infers_bortle_from_sqm_when_missing(self, mock_get):
+    def test_infers_bortle_from_sqm_when_missing(self, mock_get, mock_settings):
+        mock_settings.return_value = _no_override_settings()
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"sqm": 21.5}  # no "bortle" key
         mock_get.return_value = mock_resp
         sq = self.svc.get_sky_quality(47.6, -122.3)
         assert sq.bortle_class == 3
+
+    def test_config_override_skips_api(self):
+        from unittest.mock import patch as mp
+        fake = MagicMock(station_bortle_class=2, station_lightpoll_key=None)
+        with mp("src.config.get_settings", return_value=fake), \
+             mp("src.services.astronomy.requests.get") as mock_get:
+            sq = self.svc.get_sky_quality(47.6, -122.3)
+            mock_get.assert_not_called()
+        assert sq.bortle_class == 2
+        assert sq.source == "configured"
+
+    def test_config_override_clamps_to_valid_range(self):
+        from unittest.mock import patch as mp
+        fake = MagicMock(station_bortle_class=0, station_lightpoll_key=None)  # invalid, clamp to 1
+        with mp("src.config.get_settings", return_value=fake), \
+             mp("src.services.astronomy.requests.get"):
+            sq = self.svc.get_sky_quality(47.6, -122.3)
+        assert sq.bortle_class == 1
