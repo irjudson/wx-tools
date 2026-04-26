@@ -11,31 +11,37 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home,
+    meta: { public: true },
   },
   {
     path: '/graphs',
     name: 'Graphs',
     component: Graphs,
+    meta: { public: false },
   },
   {
     path: '/import',
     name: 'ImportData',
     component: ImportData,
+    meta: { public: false },
   },
   {
     path: '/analysis',
     name: 'EnergyAnalysis',
     component: EnergyAnalysis,
+    meta: { public: false },
   },
   {
     path: '/explorer',
     name: 'DataExplorer',
     component: DataExplorer,
+    meta: { public: false },
   },
   {
     path: '/settings',
     name: 'Settings',
     component: Settings,
+    meta: { public: false },
   },
 ];
 
