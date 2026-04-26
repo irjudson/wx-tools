@@ -2,6 +2,16 @@
 
 @layer base {
   @reference;
+  :root {
+    --color-temp: theme(colors.amber.500);
+    --color-wind: theme(colors.sky.500);
+    --color-rain: theme(colors.indigo.500);
+    --color-uv: theme(colors.orange.500);
+    --color-solar: theme(colors.yellow.500);
+    --color-pressure: theme(colors.teal.500);
+    --color-indoor: theme(colors.violet.500);
+    --color-humidity: theme(colors.blue.500);
+  }
 }
 
 /*
@@ -113,3 +123,37 @@ h3 {
   max-height: 100% !important;
   height: 100% !important;
 }
+
+/* Metric card with color accent bar */
+.metric-card {
+  @apply relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex flex-col gap-2 overflow-hidden transition-shadow duration-200 hover:shadow-md;
+}
+
+.metric-card::before {
+  content: '';
+  @apply absolute left-0 top-0 bottom-0 w-1 rounded-l-xl;
+}
+
+.metric-card.temp::before     { @apply bg-amber-500; }
+.metric-card.wind::before     { @apply bg-sky-500; }
+.metric-card.rain::before     { @apply bg-indigo-500; }
+.metric-card.uv::before       { @apply bg-orange-500; }
+.metric-card.solar::before    { @apply bg-yellow-500; }
+.metric-card.pressure::before { @apply bg-teal-500; }
+.metric-card.indoor::before   { @apply bg-violet-500; }
+.metric-card.humidity::before { @apply bg-blue-500; }
+
+.metric-icon { @apply w-6 h-6 flex-shrink-0; }
+.metric-value { @apply text-3xl font-bold text-gray-900 dark:text-white leading-none; }
+.metric-unit  { @apply text-sm font-medium text-gray-500 dark:text-gray-400 ml-1; }
+.metric-label { @apply text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400; }
+.metric-secondary { @apply text-sm text-gray-600 dark:text-gray-300; }
+
+/* Severity badge */
+.severity-badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold;
+}
+.severity-badge.low     { @apply bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300; }
+.severity-badge.medium  { @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300; }
+.severity-badge.high    { @apply bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300; }
+.severity-badge.extreme { @apply bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300; }
