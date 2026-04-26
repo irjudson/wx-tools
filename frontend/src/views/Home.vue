@@ -294,7 +294,9 @@
               <div class="metric-secondary font-semibold">{{ weatherStore.latestReading?.wind_gust_mph != null ? weatherStore.latestReading.wind_gust_mph.toFixed(1) : '--' }} mph</div>
             </div>
           </div>
-          <canvas id="wind-rose" ref="windRoseRef" class="w-full h-28 mt-2"></canvas>
+          <div class="relative h-24 mt-2">
+            <canvas id="wind-rose" ref="windRoseRef"></canvas>
+          </div>
           <router-link to="/graphs" class="mt-auto pt-1 text-sky-500 hover:text-sky-600 self-end">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </router-link>
@@ -311,7 +313,7 @@
             </svg>
             <span class="metric-label">Rainfall</span>
           </div>
-          <div class="flex justify-around items-end h-20 mb-2">
+          <div class="flex justify-around items-end h-14 mb-2">
             <div class="flex flex-col items-center gap-1">
               <div class="w-7 rounded-t-full overflow-hidden flex-1 flex flex-col justify-end" style="min-height: 8px;">
                 <div :class="['rounded-t-full', (weatherStore.latestReading?.daily_rain_in ?? 0) > 0 ? 'bg-indigo-500' : 'bg-indigo-200 dark:bg-indigo-900']" style="height: 100%"></div>
@@ -665,7 +667,7 @@ const initWindRose = () => {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: { r: { beginAtZero: true, ticks: { display: false } } }
     }
