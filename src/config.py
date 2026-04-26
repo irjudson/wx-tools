@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     database_url: str
     station_passkey: str
     log_level: str = "INFO"
+    station_latitude: float = 0.0
+    station_longitude: float = 0.0
 
     model_config = ConfigDict(env_file=".env")
 
