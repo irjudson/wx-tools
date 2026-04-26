@@ -137,8 +137,10 @@ app.add_middleware(
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
 
 # Mount static files (only if they exist - allows tests to run without frontend build)
-if Path("frontend/dist/assets").exists():
-    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+if Path("static/assets").exists():
+    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+if Path("static/icons").exists():
+    app.mount("/icons", StaticFiles(directory="static/icons"), name="icons")
 
 
 @app.get("/api/health")
@@ -815,7 +817,7 @@ async def update_station_config(config: StationConfigRequest):
 @app.get("/", response_class=HTMLResponse)
 async def serve_vue_app():
     """Serve the Vue application's index.html"""
-    frontend_path = Path("frontend/dist/index.html")
+    frontend_path = Path("static/index.html")
     if frontend_path.exists():
         return FileResponse(frontend_path)
     return HTMLResponse("<html><body><h1>Weather Station API</h1><p>Frontend not built. API endpoints available at /api/</p></body></html>")
@@ -824,7 +826,7 @@ async def serve_vue_app():
 @app.get("/graphs", response_class=HTMLResponse)
 async def graphs_page(request: Request):
     """Serve graphs & analysis page"""
-    frontend_path = Path("frontend/dist/index.html")
+    frontend_path = Path("static/index.html")
     if frontend_path.exists():
         return FileResponse(frontend_path)
     return HTMLResponse("<html><body><h1>Weather Station API</h1><p>Frontend not built. API endpoints available at /api/</p></body></html>")
@@ -833,7 +835,7 @@ async def graphs_page(request: Request):
 @app.get("/favicon.svg")
 async def favicon():
     """Serve favicon"""
-    favicon_path = Path("frontend/dist/favicon.svg")
+    favicon_path = Path("static/favicon.svg")
     if favicon_path.exists():
         return FileResponse(favicon_path, media_type="image/svg+xml")
     raise HTTPException(status_code=404, detail="Favicon not found")
@@ -910,8 +912,11 @@ async def catch_weather_upload(catchall: str, request: Request, db: Session = De
 # Catch-all for Vue SPA (MUST be last route)
 @app.get("/{path:path}", response_class=HTMLResponse)
 async def serve_vue_spa(path: str):
-    """Serve the Vue application for all other routes not caught above"""
-    frontend_path = Path("frontend/dist/index.html")
+    """Serve static files if they exist, otherwise serve the Vue SPA"""
+    static_file = Path("static") / path
+    if static_file.exists() and static_file.is_file():
+        return FileResponse(static_file)
+    frontend_path = Path("static/index.html")
     if frontend_path.exists():
         return FileResponse(frontend_path)
     raise HTTPException(status_code=404, detail="Not Found")
