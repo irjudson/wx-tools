@@ -754,7 +754,9 @@ async def get_configuration(db: Session = Depends(get_db)):
     return {
         "mqtt": mqtt_config,
         "station": {
-            "passkey_configured": bool(get_settings().station_passkey)
+            "passkey_configured": bool(get_settings().station_passkey),
+            "latitude": get_settings().station_latitude,
+            "longitude": get_settings().station_longitude,
         },
         "timezone": get_timezone(db)
     }

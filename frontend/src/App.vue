@@ -11,7 +11,10 @@
             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
           </svg>
         </div>
-        <span class="logo-text sidebar-text">WX Station</span>
+        <div class="logo-text sidebar-text">
+          <span class="station-name">Buffalo Jump Ranch</span>
+          <span v-if="stationCoords" class="station-coords">{{ stationCoords }}</span>
+        </div>
       </div>
 
       <!-- Station Statistics -->
@@ -59,7 +62,7 @@
 
     <!-- ── Mobile Top App Bar ── -->
     <header class="top-app-bar">
-      <span class="text-white font-semibold text-base">WX Station</span>
+      <span class="text-white font-semibold text-base">Buffalo Jump Ranch</span>
       <button @click="drawerOpen = true" class="text-gray-300 hover:text-white p-1" aria-label="Open menu">
         <NavIcons name="menu" :size="24" />
       </button>
@@ -79,7 +82,7 @@
               <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
             </svg>
           </div>
-          <span class="logo-text">WX Station</span>
+          <span class="logo-text">Buffalo Jump Ranch</span>
         </div>
         <button @click="drawerOpen = false" class="text-gray-400 hover:text-white">
           <NavIcons name="x" :size="20" />
@@ -136,6 +139,23 @@ import { useWeatherStore } from './stores/weather';
 import NavIcons from './components/NavIcons.vue';
 
 const weatherStore = useWeatherStore();
+
+// ── Station coordinates ──
+const stationCoords = ref<string | null>(null);
+
+const fetchStationCoords = async () => {
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const data = await res.json();
+    const { latitude, longitude } = data.station ?? {};
+    if (latitude != null && longitude != null) {
+      const lat = `${Math.abs(latitude).toFixed(4)}°${latitude >= 0 ? 'N' : 'S'}`;
+      const lon = `${Math.abs(longitude).toFixed(4)}°${longitude >= 0 ? 'E' : 'W'}`;
+      stationCoords.value = `${lat}  ${lon}`;
+    }
+  } catch { /* silent */ }
+};
 
 // ── Sidebar state ──
 const STORAGE_KEY = 'wx-sidebar-collapsed';
@@ -199,6 +219,7 @@ let statsInterval: ReturnType<typeof setInterval>;
 
 onMounted(() => {
   weatherStore.fetchLatestReading();
+  fetchStationCoords();
   fetch24hStats();
   statsInterval = setInterval(fetch24hStats, 5 * 60 * 1000);
   weatherStore.startDashboardAutoRefresh();

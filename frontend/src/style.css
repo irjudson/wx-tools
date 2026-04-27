@@ -55,7 +55,15 @@ body {
 }
 
 .logo-text {
-  @apply text-lg font-bold text-white truncate;
+  @apply flex flex-col leading-tight overflow-hidden;
+}
+
+.station-name {
+  @apply text-base font-bold text-white truncate;
+}
+
+.station-coords {
+  @apply text-xs text-gray-400 font-mono truncate;
 }
 
 .station-stats {
