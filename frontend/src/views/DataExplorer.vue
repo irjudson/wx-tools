@@ -41,6 +41,19 @@
         </div>
       </div>
 
+      <!-- Export resolution -->
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Export resolution:</span>
+        <label class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+          <input type="radio" v-model="exportResolution" value="raw" class="text-blue-600" />
+          Raw (5-min, all rows in date range)
+        </label>
+        <label class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+          <input type="radio" v-model="exportResolution" value="hourly" class="text-blue-600" />
+          Hourly averages
+        </label>
+      </div>
+
       <div class="flex gap-3">
         <button
           @click="queryData"
@@ -49,13 +62,16 @@
         >
           {{ isLoading ? 'Querying...' : 'Query Data' }}
         </button>
-        <button
-          v-if="readings.length > 0"
-          @click="exportCSV"
-          class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-md transition-colors"
+        <a
+          v-if="readings.length > 0 && exportUrl"
+          :href="exportUrl"
+          :download="exportFilename"
+          @click.prevent="handleExportClick"
+          class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-md transition-colors inline-block"
         >
           Export CSV
-        </button>
+          <span class="text-xs opacity-75 ml-1">({{ exportResolution === 'hourly' ? 'hourly avg' : 'all rows' }})</span>
+        </a>
       </div>
 
       <div v-if="error" class="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
@@ -175,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import type { WeatherReading } from '../types/weather';
 
 const queryForm = ref({
@@ -188,6 +204,23 @@ const isLoading = ref(false);
 const readings = ref<WeatherReading[]>([]);
 const error = ref<string | null>(null);
 const statusMessage = ref<string | null>(null);
+const exportResolution = ref<'raw' | 'hourly'>('raw');
+
+const exportUrl = computed(() => {
+  if (!queryForm.value.start || !queryForm.value.end || readings.value.length === 0) return '';
+  const params = new URLSearchParams({
+    start: new Date(queryForm.value.start).toISOString(),
+    end: new Date(queryForm.value.end).toISOString(),
+  });
+  const base = exportResolution.value === 'hourly' ? '/api/weather/export/hourly' : '/api/weather/export';
+  return `${base}?${params}`;
+});
+
+const exportFilename = computed(() =>
+  queryForm.value.start && queryForm.value.end
+    ? `weather-${queryForm.value.start.slice(0, 10)}-to-${queryForm.value.end.slice(0, 10)}.csv`
+    : 'weather.csv'
+);
 
 // Initialize with last 7 days
 onMounted(() => {
@@ -245,23 +278,41 @@ async function queryData() {
   }
 }
 
-function exportCSV() {
-  if (readings.value.length === 0) {
-    error.value = 'No data to export';
+
+async function handleExportClick() {
+  if (!exportUrl.value) return;
+
+  // In a sandboxed iframe (e.g. Claude Code browser), anchor downloads are blocked.
+  // Detect iframe and try opening in a new top-level tab instead.
+  if (window.self !== window.top) {
+    const newWin = window.open(exportUrl.value, '_blank');
+    if (!newWin) {
+      statusMessage.value = `Popups blocked. Open manually: ${window.location.origin}${exportUrl.value}`;
+    }
     return;
   }
 
-  const startISO = new Date(queryForm.value.start).toISOString();
-  const endISO = new Date(queryForm.value.end).toISOString();
-  const params = new URLSearchParams({
-    start: startISO,
-    end: endISO,
-    limit: queryForm.value.limit.toString(),
-  });
-
-  // Trigger download
-  window.location.href = `/api/weather/export?${params}`;
-  statusMessage.value = 'Downloading CSV...';
+  // Normal browser: fetch the data and trigger a blob download so the SW
+  // NavigationRoute can never intercept it as a page navigation.
+  statusMessage.value = 'Preparing download...';
+  try {
+    const resp = await fetch(exportUrl.value);
+    if (!resp.ok) throw new Error(resp.statusText);
+    const text = await resp.text();
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = exportFilename.value;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    statusMessage.value = `Downloaded ${exportFilename.value} (${readings.value.length} rows)`;
+  } catch (err: any) {
+    error.value = `Export failed: ${err.message}`;
+    statusMessage.value = null;
+  }
 }
 
 function formatDateTime(isoString: string): string {

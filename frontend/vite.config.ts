@@ -11,7 +11,14 @@ export default defineConfig({
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Prevent the SPA navigation fallback from swallowing API requests
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
+          {
+            // Never cache file downloads — streaming responses can't be cloned
+            urlPattern: /^\/api\/weather\/export/,
+            handler: 'NetworkOnly',
+          },
           {
             urlPattern: /^\/api\/weather\/current/,
             handler: 'NetworkFirst',

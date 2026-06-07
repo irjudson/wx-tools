@@ -72,6 +72,18 @@ class WindAnalyzer(EnergyAnalyzer):
                     "description": "Cost per kWh in local currency",
                     "default": 0.12,
                     "minimum": 0
+                },
+                "cut_in_mph": {
+                    "type": "number",
+                    "description": "Wind speed at which the turbine starts generating (mph); overrides turbine model default",
+                    "default": None,
+                    "minimum": 0
+                },
+                "system_cost_per_kw": {
+                    "type": "number",
+                    "description": "Installed system cost per rated kW of turbine capacity (USD)",
+                    "default": 5000,
+                    "minimum": 0
                 }
             },
             "required": []
@@ -172,6 +184,7 @@ class WindAnalyzer(EnergyAnalyzer):
         hub_height = config.get("hub_height_m", 10)
         measurement_height = config.get("measurement_height_m", 2)
         electricity_cost = config.get("electricity_cost_per_kwh", 0.12)
+        system_cost_per_kw = config.get("system_cost_per_kw", 5000)
 
         # Query wind speed data
         readings = db.query(WeatherReading).filter(
@@ -197,7 +210,7 @@ class WindAnalyzer(EnergyAnalyzer):
         operational_hours = 0.0
 
         turbine_curve = TURBINE_POWER_CURVES[turbine_model]
-        cut_in_speed = turbine_curve["cut_in_mph"]
+        cut_in_speed = config.get("cut_in_mph") or turbine_curve["cut_in_mph"]
 
         for reading in readings:
             if reading.wind_speed_mph is not None:
@@ -259,10 +272,7 @@ class WindAnalyzer(EnergyAnalyzer):
         annual_cost_savings = round(annual_estimate_kwh * electricity_cost, 2)
 
         # Calculate ROI
-        # Typical small wind turbine costs: $3,000-$8,000/kW installed
-        # Using $5,000/kW as mid-range estimate
-        cost_per_kw = 5000
-        system_cost = rated_power_kw * cost_per_kw
+        system_cost = rated_power_kw * system_cost_per_kw
         payback_years = round(system_cost / annual_cost_savings, 1) if annual_cost_savings > 0 else 0
 
         roi = {
@@ -274,6 +284,8 @@ class WindAnalyzer(EnergyAnalyzer):
 
         # Additional data
         avg_power_kw = round(total_power_kw / len(readings), 2) if len(readings) > 0 else 0.0
+        valid_speeds = [r.wind_speed_mph for r in readings if r.wind_speed_mph is not None]
+        avg_wind_speed = round(sum(valid_speeds) / len(valid_speeds), 1) if valid_speeds else 0.0
 
         # Format wind speed distribution
         speed_distribution = [
@@ -291,10 +303,12 @@ class WindAnalyzer(EnergyAnalyzer):
             "turbine_model": turbine_model,
             "hub_height_m": hub_height,
             "measurement_height_m": measurement_height,
+            "cut_in_mph": cut_in_speed,
             "rated_power_kw": rated_power_kw,
             "capacity_factor_pct": capacity_factor,
             "operational_hours": round(operational_hours, 2),
             "avg_power_kw": avg_power_kw,
+            "avg_wind_speed": avg_wind_speed,
             "wind_speed_distribution": speed_distribution
         }
 

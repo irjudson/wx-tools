@@ -121,10 +121,10 @@ def get_sampled_readings(
     if (end - start).days > 1825:
         raise ValueError("Date range too large, maximum 5 years")
 
-    # Check for future dates
+    # Clamp end to now if it's in the future
     now = datetime.now(timezone.utc)
     if end > now:
-        raise ValueError("End date cannot be in the future")
+        end = now
 
     bucket_size = calculate_bucket_size(start, end)
 

@@ -46,6 +46,12 @@ class SolarAnalyzer(EnergyAnalyzer):
                     "description": "Cost per kWh in local currency",
                     "default": 0.12,
                     "minimum": 0
+                },
+                "system_cost_per_m2": {
+                    "type": "number",
+                    "description": "Installed system cost per m² of panel area (USD)",
+                    "default": 200,
+                    "minimum": 0
                 }
             },
             "required": []
@@ -101,6 +107,7 @@ class SolarAnalyzer(EnergyAnalyzer):
         efficiency_pct = config.get("efficiency_pct", 20)
         tilt_loss_pct = config.get("tilt_loss_pct", 10)
         electricity_cost = config.get("electricity_cost_per_kwh", 0.12)
+        system_cost_per_m2 = config.get("system_cost_per_m2", 200)
 
         # Calculate effective efficiency with tilt/orientation loss
         effective_efficiency = (efficiency_pct / 100) * (1 - (tilt_loss_pct / 100))
@@ -160,12 +167,8 @@ class SolarAnalyzer(EnergyAnalyzer):
         annual_estimate_kwh = round(daily_avg_kwh * 365, 2)
         annual_cost_savings = round(annual_estimate_kwh * electricity_cost, 2)
 
-        # Calculate ROI (assuming typical system costs)
-        # Typical residential solar: ~$2.50-3.50/watt, ~6 watts/sq ft panel
-        # 20 m² ≈ 215 sq ft * 6 W/sq ft = 1290 watts = 1.29 kW
-        # System cost: 1.29 kW * $3/watt * 1000 = $3,870 (rough estimate)
-        estimated_system_cost_per_m2 = 200  # $/m²
-        system_cost = panel_area * estimated_system_cost_per_m2
+        # Calculate ROI
+        system_cost = panel_area * system_cost_per_m2
         payback_years = round(system_cost / annual_cost_savings, 1) if annual_cost_savings > 0 else 0
 
         roi = {

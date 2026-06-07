@@ -21,6 +21,7 @@ from src.services.csv_import import import_csv_data
 from src.services.query import get_latest_reading, get_readings, get_database_stats
 from src.services.config import get_mqtt_config, set_mqtt_config
 from src.services.mqtt_publisher import MQTTPublisher, MQTTConfig
+from src.models import WeatherReading
 from src.services.sampling import get_sampled_readings
 from src.services.astronomy import ForecastService, LightPollutionService, MoonService, TonightForecast
 from src.analysis.solar import SolarAnalyzer
@@ -589,106 +590,64 @@ async def data_freshness_check(db: Session = Depends(get_db)):
 async def export_readings_csv(
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    limit: Optional[int] = 10000,
     db: Session = Depends(get_db)
 ):
-    """Export weather readings to CSV"""
+    """Export all weather readings in a date range to CSV (no row cap)."""
     import csv
     import io
 
-    # Enforce maximum limit
-    if limit is not None and limit > 100000:
-        raise HTTPException(status_code=400, detail="Limit cannot exceed 100000")
-
-    # Validate date range
     if start and end and start > end:
         raise HTTPException(status_code=400, detail="Start date must be before end date")
 
-    # Get readings
-    readings = get_readings(db, start, end, limit, 0)
+    CSV_HEADERS = [
+        "Timestamp",
+        "Outdoor Temperature (°F)", "Feels Like (°F)", "Dew Point (°F)", "Humidity (%)",
+        "Wind Speed (mph)", "Wind Gust (mph)", "Max Daily Gust (mph)", "Wind Direction (°)",
+        "Rain Rate (in/hr)", "Event Rain (in)", "Daily Rain (in)",
+        "Weekly Rain (in)", "Monthly Rain (in)", "Yearly Rain (in)", "Total Rain (in)",
+        "Relative Pressure (inHg)", "Absolute Pressure (inHg)",
+        "UV Index", "Solar Radiation (W/m²)",
+        "Indoor Temperature (°F)", "Indoor Humidity (%)",
+        "Indoor Feels Like (°F)", "Indoor Dew Point (°F)",
+        "Sensor 1 Temperature (°F)", "Sensor 1 Humidity (%)",
+        "Sensor 1 Feels Like (°F)", "Sensor 1 Dew Point (°F)",
+        "Outdoor Battery", "Sensor 1 Battery",
+    ]
 
-    # Create CSV in memory
-    output = io.StringIO()
-    writer = csv.writer(output)
-
-    # Write header
-    if readings:
-        # Get field names from first reading
-        headers = [
-            "Timestamp",
-            "Outdoor Temperature (°F)",
-            "Feels Like (°F)",
-            "Dew Point (°F)",
-            "Humidity (%)",
-            "Wind Speed (mph)",
-            "Wind Gust (mph)",
-            "Max Daily Gust (mph)",
-            "Wind Direction (°)",
-            "Rain Rate (in/hr)",
-            "Event Rain (in)",
-            "Daily Rain (in)",
-            "Weekly Rain (in)",
-            "Monthly Rain (in)",
-            "Yearly Rain (in)",
-            "Total Rain (in)",
-            "Relative Pressure (inHg)",
-            "Absolute Pressure (inHg)",
-            "UV Index",
-            "Solar Radiation (W/m²)",
-            "Indoor Temperature (°F)",
-            "Indoor Humidity (%)",
-            "Indoor Feels Like (°F)",
-            "Indoor Dew Point (°F)",
-            "Sensor 1 Temperature (°F)",
-            "Sensor 1 Humidity (%)",
-            "Sensor 1 Feels Like (°F)",
-            "Sensor 1 Dew Point (°F)",
-            "Outdoor Battery",
-            "Sensor 1 Battery"
+    def row_values(r):
+        return [
+            r.timestamp.isoformat() if r.timestamp else "",
+            r.outdoor_temp_f, r.feels_like_f, r.dew_point_f, r.humidity_pct,
+            r.wind_speed_mph, r.wind_gust_mph, r.max_daily_gust_mph, r.wind_direction_deg,
+            r.rain_rate_in_hr, r.event_rain_in, r.daily_rain_in,
+            r.weekly_rain_in, r.monthly_rain_in, r.yearly_rain_in, r.total_rain_in,
+            r.relative_pressure_inhg, r.absolute_pressure_inhg,
+            r.uv_index, r.solar_radiation_wm2,
+            r.indoor_temp_f, r.indoor_humidity_pct,
+            r.indoor_feels_like_f, r.indoor_dew_point_f,
+            r.sensor1_temp_f, r.sensor1_humidity_pct,
+            r.sensor1_feels_like_f, r.sensor1_dew_point_f,
+            r.outdoor_battery, r.sensor1_battery,
         ]
-        writer.writerow(headers)
 
-        # Write data rows
-        for reading in readings:
-            row = [
-                reading.timestamp.isoformat() if reading.timestamp else "",
-                reading.outdoor_temp_f,
-                reading.feels_like_f,
-                reading.dew_point_f,
-                reading.humidity_pct,
-                reading.wind_speed_mph,
-                reading.wind_gust_mph,
-                reading.max_daily_gust_mph,
-                reading.wind_direction_deg,
-                reading.rain_rate_in_hr,
-                reading.event_rain_in,
-                reading.daily_rain_in,
-                reading.weekly_rain_in,
-                reading.monthly_rain_in,
-                reading.yearly_rain_in,
-                reading.total_rain_in,
-                reading.relative_pressure_inhg,
-                reading.absolute_pressure_inhg,
-                reading.uv_index,
-                reading.solar_radiation_wm2,
-                reading.indoor_temp_f,
-                reading.indoor_humidity_pct,
-                reading.indoor_feels_like_f,
-                reading.indoor_dew_point_f,
-                reading.sensor1_temp_f,
-                reading.sensor1_humidity_pct,
-                reading.sensor1_feels_like_f,
-                reading.sensor1_dew_point_f,
-                reading.outdoor_battery,
-                reading.sensor1_battery
-            ]
-            writer.writerow(row)
+    # Stream rows so large exports don't require building a giant in-memory string
+    def generate():
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(CSV_HEADERS)
+        yield buf.getvalue()
 
-    # Get CSV content
-    csv_content = output.getvalue()
-    output.close()
+        q = db.query(WeatherReading)
+        if start:
+            q = q.filter(WeatherReading.timestamp >= start)
+        if end:
+            q = q.filter(WeatherReading.timestamp <= end)
+        for reading in q.order_by(WeatherReading.timestamp.asc()):
+            buf.seek(0)
+            buf.truncate(0)
+            writer.writerow(row_values(reading))
+            yield buf.getvalue()
 
-    # Generate filename with date range
     filename = "weather_data"
     if start:
         filename += f"_{start.strftime('%Y%m%d')}"
@@ -696,9 +655,84 @@ async def export_readings_csv(
         filename += f"_to_{end.strftime('%Y%m%d')}"
     filename += ".csv"
 
-    # Return as downloadable file
     return StreamingResponse(
-        iter([csv_content]),
+        generate(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@app.get("/api/weather/export/hourly")
+async def export_hourly_csv(
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    db: Session = Depends(get_db)
+):
+    """Export hourly-averaged weather data for a date range (no row cap)."""
+    import csv
+    import io
+    from collections import defaultdict
+
+    if start and end and start > end:
+        raise HTTPException(status_code=400, detail="Start date must be before end date")
+
+    NUMERIC_FIELDS = [
+        "outdoor_temp_f", "feels_like_f", "dew_point_f", "humidity_pct",
+        "wind_speed_mph", "wind_gust_mph", "max_daily_gust_mph", "wind_direction_deg",
+        "rain_rate_in_hr", "event_rain_in", "daily_rain_in",
+        "weekly_rain_in", "monthly_rain_in", "yearly_rain_in", "total_rain_in",
+        "relative_pressure_inhg", "absolute_pressure_inhg",
+        "uv_index", "solar_radiation_wm2",
+        "indoor_temp_f", "indoor_humidity_pct", "indoor_feels_like_f", "indoor_dew_point_f",
+        "sensor1_temp_f", "sensor1_humidity_pct", "sensor1_feels_like_f", "sensor1_dew_point_f",
+        "outdoor_battery", "sensor1_battery",
+    ]
+
+    CSV_HEADERS = ["Hour (UTC)"] + [f.replace("_", " ").title() for f in NUMERIC_FIELDS]
+
+    q = db.query(WeatherReading)
+    if start:
+        q = q.filter(WeatherReading.timestamp >= start)
+    if end:
+        q = q.filter(WeatherReading.timestamp <= end)
+
+    # Bucket readings into hour slots and accumulate sums + counts
+    buckets: dict = defaultdict(lambda: {"sums": defaultdict(float), "counts": defaultdict(int)})
+    for r in q.order_by(WeatherReading.timestamp.asc()):
+        hour_key = r.timestamp.replace(minute=0, second=0, microsecond=0)
+        bucket = buckets[hour_key]
+        for field in NUMERIC_FIELDS:
+            val = getattr(r, field, None)
+            if val is not None:
+                bucket["sums"][field] += val
+                bucket["counts"][field] += 1
+
+    def generate():
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(CSV_HEADERS)
+        yield buf.getvalue()
+
+        for hour_key in sorted(buckets):
+            bucket = buckets[hour_key]
+            row = [hour_key.isoformat()]
+            for field in NUMERIC_FIELDS:
+                cnt = bucket["counts"][field]
+                row.append(round(bucket["sums"][field] / cnt, 4) if cnt else "")
+            buf.seek(0)
+            buf.truncate(0)
+            writer.writerow(row)
+            yield buf.getvalue()
+
+    filename = "weather_hourly"
+    if start:
+        filename += f"_{start.strftime('%Y%m%d')}"
+    if end:
+        filename += f"_to_{end.strftime('%Y%m%d')}"
+    filename += ".csv"
+
+    return StreamingResponse(
+        generate(),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
